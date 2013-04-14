@@ -45,6 +45,7 @@ public class DatabaseAdmin {
                     case 2:
                         //Manager interface open
                         System.out.println("Calling updateOption()...\n");
+                        updateOption();
                         done = false;
                         break;
                     case 3:
@@ -121,7 +122,28 @@ public class DatabaseAdmin {
                     }
                     System.out.println("");
                 } while (result.next());
+                
             }
+            stmt.close();
+        } catch (SQLException ex) {
+            System.out.println("Error: Query invalid. Please try again.");
+        }
+        System.out.println("");
+    }
+    
+    private void updateOption(){
+        in.nextLine();
+        System.out.println("Please enter your SQL update statement.");
+        String u;
+        
+        u = in.nextLine();
+        Statement stmt;
+        try {
+            stmt = con.createStatement();
+            int result;
+            result = stmt.executeUpdate(u);
+            System.out.println( result + " Rows modified" ) ;
+            stmt.close();
         } catch (SQLException ex) {
             System.out.println("Error: Query invalid. Please try again.");
         }
