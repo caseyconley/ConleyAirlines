@@ -64,12 +64,14 @@ public class ConleyAirlines {
                             break;
                         case 2:
                             //Manager interface open
-                            System.out.println("Initializing Customer interface...\n");
+                            System.out.println("Initializing Manager interface...\n");
                             validInput = true;
                             break;
                         case 3:
                             //Customer interface open
                             System.out.println("Initializing Customer interface...\n");
+                            Customer c = new Customer(con, in);
+                            c.openInterface();
                             validInput = true;
                             break;
                         case 4:
@@ -96,17 +98,16 @@ public class ConleyAirlines {
                     System.out.println("Error: Please enter a valid number choice.");
                     printOptions();
                     validInput = false;
-                }
-                catch (IllegalStateException ex) {
+                } catch (IllegalStateException ex) {
                     in = new Scanner(System.in);
                     System.out.println("Error: Internal Error, scanner closed, "
                             + "reinitialized. \nPlease try again.");
                     System.out.print("-->");
                     validInput = false;
                 }
-            System.out.println("What would you like to do?");
-            printOptions();
-            in.nextLine();
+                System.out.println("What would you like to do?");
+                printOptions();
+                in.nextLine();
             }
         }
     }
