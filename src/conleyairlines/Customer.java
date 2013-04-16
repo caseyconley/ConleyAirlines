@@ -248,6 +248,10 @@ public class Customer {
             System.out.print("Please enter your 3-digit security number.\n-->");
             int sec_code = in.nextInt();
             in.nextLine();
+            System.out.print("Please enter the expiration date in the format MMYY "
+                    + "(example if it is June 2013, enter 0613.\n-->");
+            int exp_date = in.nextInt();
+            in.nextLine();
             System.out.print("Please enter your street address (example: 1600 "
                     + "Pennsylvania Avenue).\n-->");
             String address = in.nextLine();
@@ -260,7 +264,7 @@ public class Customer {
             int zip = in.nextInt();
             in.nextLine();
             String insertCreditCard = "insert into credit_card values (" + card_num + ", " 
-                    + sec_code + ", '"+ address + "', '" + city + "', '" + state + "', " + zip + ")";
+                    + sec_code + ", " + exp_date + ", '"+ address + "', '" + city + "', '" + state + "', " + zip + ")";
             Statement stmtCreditCard;
             stmtCreditCard = con.createStatement();
             int resultCreditCard;
@@ -327,45 +331,68 @@ public class Customer {
         else{
             ArrayList<Long> cards = viewCreditCards(customerID);
             System.out.println("Please enter the number of the credit card you would like to remove.");
-            System.out.print("-->");
+            
             boolean valid = false;
             int userChoice;
             while(!valid){
+                System.out.print("-->");
                 userChoice = in.nextInt();
                 in.nextLine();
                 long card_num = -1;
                 try {
-                    card_num = cards.get(userChoice - 1);
-                    Statement stmtCreditCard;
-                    stmtCreditCard = con.createStatement();
-                    String deleteCreditCard = "delete from credit_card where card_num = " + card_num + "";
-                    int resultCreditCard = stmtCreditCard.executeUpdate(deleteCreditCard);
-                    if (resultCreditCard == 1){
-                        //insert into credit_card successful, now insert into billing_info
-                        String deleteBillingInfo = "delete from billing_info where card_num = " 
+                    card_num = (cards.get(userChoice-1)).longValue();
+                    con.setAutoCommit(false);
+                    Statement stmtBilling;
+                    stmtBilling = con.createStatement();
+                    
+                    String deleteBilling = "delete from billing_info where card_num = " 
                                 + card_num + " and customer_id = " + customerID;
-                        Statement stmtBillingInfo;
-                        stmtBillingInfo = con.createStatement();
-                        int resultBillingInfo;
-                        resultBillingInfo = stmtBillingInfo.executeUpdate(deleteBillingInfo);
-                        if(resultBillingInfo == 1){
+                    int resultBilling = stmtBilling.executeUpdate(deleteBilling);
+                    if (resultBilling == 1){
+                        //delete from credit_card successful, now delete from billing_info
+                        String deleteCredit = "delete from credit_card where card_num = " + card_num + "";
+                        Statement stmtCredit;
+                        stmtCredit = con.createStatement();
+                        int resultCredit;
+                        resultCredit = stmtCredit.executeUpdate(deleteCredit);
+                        if(resultCredit == 1){
                             System.out.println("Credit card successfully deleted from your account.");
+                            valid = true;
+                            con.commit();
+                            con.setAutoCommit(true);
                         }
                         else {
                             System.out.println("Please enter a valid number choice.");
+                            valid = false;
+                            con.rollback();
+                            con.setAutoCommit(true);
                         }
-                        stmtBillingInfo.close();
+                        stmtCredit.close();
                     }
                     else {
                         System.out.println("Please enter a valid number choice.");
+                        con.rollback();
+                        con.setAutoCommit(true);
                         valid = false;
                     }
-                    stmtCreditCard.close();
+                    stmtBilling.close();
                 } catch (SQLException ex){
                     System.out.println("Error: Database error. Please try again later.");
+                    try {
+                        con.rollback();
+                    } catch (SQLException ex1) { //please don't ever get to here
+                        System.out.println("Database rollback failed. Check internet connection. Exiting program.");
+                        System.exit(1);
+                    }
                     valid = true;
                 } catch (IndexOutOfBoundsException ex){
                     System.out.println("Please enter a valid number choice.");
+                    try {
+                        con.rollback();
+                    } catch (SQLException ex1) { //please don't ever get to here
+                        System.out.println("Database rollback failed. Check internet connection. Exiting program.");
+                        System.exit(1);
+                    }
                     valid = false;
                 }
             }
@@ -392,14 +419,14 @@ public class Customer {
                     int security_code, zip;
                     long card_num;
                     String exp_date, street_add, city, state;
-                    card_num = result.getLong(i);
+                    card_num = result.getLong(1);
                     cards.add(card_num);
-                    security_code = result.getInt(i);
-                    exp_date = result.getString(i);
-                    street_add = result.getString(i);
-                    city = result.getString(i);
-                    state = result.getString(i);
-                    zip = result.getInt(i);
+                    security_code = result.getInt(2);
+                    exp_date = result.getString(3);
+                    street_add = result.getString(4);
+                    city = result.getString(5);
+                    state = result.getString(6);
+                    zip = result.getInt(7);
                     System.out.println("Card " + i + ":");
                     System.out.println("Card Number: " + card_num);
                     System.out.println("Security Code: " + security_code);
