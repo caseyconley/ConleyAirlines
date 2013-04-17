@@ -578,9 +578,11 @@ public class Customer {
             for(int i = 1; i<=trips.size(); i++){
                 trip_num = ((trips.get(i-1)).getKey()).intValue();
                 trip_date = ((trips.get(i-1)).getValue());
-                listTripsResult = listTrips.executeQuery("select price from "
-                    + "trip where trip_number = " + trip_date 
-                        + "and trip_date = '" + trip_num);
+                String listTripsQuery = "select price from "
+                    + "trip where trip_number = " + trip_num 
+                        + " and trip_date = '" + trip_date + "'";
+                listTripsResult = listTrips.executeQuery(listTripsQuery);
+                listTripsResult.next();
                 System.out.println("Trip Option " + i);
                 System.out.println("Trip Number:" + trip_num);
                 System.out.println("Trip Date:" + trip_date);
@@ -888,7 +890,7 @@ public class Customer {
     
     private ArrayList<AbstractMap.SimpleEntry<Integer,String>> findTrips(String destination, String source){
         ArrayList<AbstractMap.SimpleEntry<Integer,String>> trips = new ArrayList();
-        String q = "select trip_number, trip_date, price "
+        String q = "select trip_number, to_char(trip_date, 'DD-MON-YYYY'), price "
                 + "from trip where start_airport = '" + source 
                 + "' and end_airport = '" + destination + "' "
                 + "order by trip_date asc";
@@ -922,6 +924,7 @@ public class Customer {
             System.out.printf("%-3s\t%-20s\t%-3s\n", "#", "City", "Callsign");
             System.out.printf("%-3s\t%-20s\t%-3s\n", "-", "----", "--------");
             int i=1;
+            result.next();
             do {
                 String callsign = result.getString(1);
                 airports.add(callsign);
@@ -1005,6 +1008,7 @@ public class Customer {
         if (!hasReservations(customerID)){
             System.out.println("You have no reservations on file. Please add one"
                     + " before trying to delete one.");
+            return;
         }
         ArrayList<Integer> reservations = viewReservedFlights(customerID);
         System.out.println("Please enter the number of the reservation you "
