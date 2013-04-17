@@ -15,9 +15,6 @@ import java.util.*;
  */
 public class ConleyAirlines {
 
-    /**
-     * @param args the command line arguments
-     */
     public static void main(String[] args) {
         //connect to Edgar2 with JDBC v6
         Connection con = null;

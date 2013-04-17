@@ -1,13 +1,17 @@
-/*
- * To change this template, choose Tools | Templates
- * and open the template in the editor.
- */
+
 package conleyairlines;
 import java.sql.*;
 import java.util.*;
 /**
  *
- * @author Casey
+ * @author Casey Conley
+ * Email: cdc214@lehigh.edu
+ * Course: CSE 241
+ * Title: Airline Semester Project
+ * Purpose: The user interface for the customer of a fictional 
+ *          airline company. Uses JDBC with a database housing the information 
+ *          for the airline.
+ * 
  */
 public class Customer {
     Connection con;
@@ -338,7 +342,8 @@ public class Customer {
                 System.out.print("-->");
                 userChoice = in.nextInt();
                 in.nextLine();
-                long card_num = -1;
+                long card_num;
+                card_num = -1;
                 try {
                     card_num = (cards.get(userChoice-1)).longValue();
                     con.setAutoCommit(false);
@@ -402,7 +407,8 @@ public class Customer {
     private ArrayList<Long> viewCreditCards(int customerID){
         ArrayList<Long> cards = new ArrayList<>();
         try{
-            Statement billing_list = con.createStatement();
+            Statement billing_list;
+            billing_list = con.createStatement();
             ResultSet result;
             result = billing_list.executeQuery("select card_num, security_code, "
                     + "expiration_date, street_address, city, state, zip from "
@@ -439,22 +445,559 @@ public class Customer {
                     i++;
                 } while (result.next());
             }
+            billing_list.close();
         } catch (SQLException e){
                 System.out.println("Error: Database error, please try again.");
         }
         return cards;
     }
     
-    private void makeAReservation(int customerID){
-        
+    private boolean hasReservations(int customerID){
+        String q = "select reservation_id from customer_reserved where "
+                + "customer_id = " + customerID;
+        try {
+            Statement stmt = con.createStatement();
+            ResultSet result = stmt.executeQuery(q);
+            if (result.next()){
+                stmt.close();
+                return true;
+            }
+            else{
+                stmt.close();
+                return false;
+            }
+            
+        } catch (SQLException ex){
+            System.out.println("Database Error, delete aborted.");
+            return false;
+        }
     }
     
-    private void viewReservedFlights(int customerID){
+    private void makeAReservation(int customerID){
+        if(!hasCreditCards(customerID)){
+            System.out.println("You don't have any credit cards on file, "
+                    + "please add one before making a reservation.");
+            return;
+        }
+        try {
+            con.setAutoCommit(false);
+        } catch (SQLException ex) {
+            System.out.println("Database error disabling auto-commit. "
+                    + "Going back to main menu.");
+            return;
+        }
+        boolean tripsFound = false;
+        ArrayList<AbstractMap.SimpleEntry<Integer,String>> trips = new ArrayList();
+        //find trips
+        while (!tripsFound){
+            System.out.println("Please tell us where you're flying to.");
+            String destination = pickAirportFromOptions();
+            if("".equals(destination)){
+                System.out.println("Airport not chosen. Please try again.");
+                try {
+                    con.setAutoCommit(true);
+                } catch (SQLException ex) {
+                    System.out.println("Database error enabling auto-commit. "
+                            + "Check internet connection.");
+                    System.exit(1);
+                }
+                return;
+            }
+
+            System.out.println("Please tell us where you're flying from.");
+            String source = pickAirportFromOptions();
+            if("".equals(source)){
+                System.out.println("Airport not chosen. Please try again.");
+                try {
+                    con.setAutoCommit(true);
+                } catch (SQLException ex) {
+                    System.out.println("Database error enabling auto-commit. "
+                            + "Check internet connection.");
+                    System.exit(1);
+                }
+                return;
+            }
+            
+            trips = findTrips(source, destination);
+            if (trips.isEmpty()){
+                System.out.println("Trips not found.");
+                try{
+                    System.out.println("Would you like to search for a different"
+                            + " trip or quit?");
+                    System.out.println("1: Yes");
+                    System.out.println("2: No");
+                    boolean valid = false;
+                    while(!valid){
+                        System.out.print("-->");
+                        int userChoice = in.nextInt();
+                        in.nextLine();
+                        switch(userChoice){
+                            case 1:
+                                valid = true;
+                                break;
+                            case 2:
+                                try {
+                                    con.setAutoCommit(true);
+                                } catch (SQLException ex) {
+                                    System.out.println("Database error enabling auto-commit. "
+                                            + "Check internet connection.");
+                                    System.exit(1);
+                                }
+                                return;
+                            default:
+                                System.out.println("Please enter a either 1 (yes) or 2 (no).");
+                                valid = false;
+                                break;
+                        }
+                    }
+                } catch (InputMismatchException e){
+                    System.out.println("Please enter a either 1 (yes) or 2 (no).");
+                }
+                tripsFound = false;
+            }
+            else {
+                System.out.println("Trips found!");
+                tripsFound = true;
+            }
+        }
+        in.nextLine();
         
+        //found trips, listing them
+        try{
+            Statement listTrips = con.createStatement();
+            ResultSet listTripsResult;
+            int trip_num;
+            String trip_date;
+            for(int i = 1; i<=trips.size(); i++){
+                trip_num = ((trips.get(i-1)).getKey()).intValue();
+                trip_date = ((trips.get(i-1)).getValue());
+                listTripsResult = listTrips.executeQuery("select price from "
+                    + "trip where trip_number = " + trip_date 
+                        + "and trip_date = '" + trip_num);
+                System.out.println("Trip Option " + i);
+                System.out.println("Trip Number:" + trip_num);
+                System.out.println("Trip Date:" + trip_date);
+                System.out.println("Price:" + listTripsResult.getInt(1));
+            }
+        } catch (SQLException e){
+            System.out.println("Error: Database error while listing trips "
+                    + "found. Going back to main menu.");
+            try {
+                con.setAutoCommit(true);
+            } catch (SQLException ex) {
+                System.out.println("Database error enabling auto-commit. "
+                        + "Check internet connection.");
+                System.exit(1);
+            }
+            return;
+        }
+        
+        //choose a trip
+        boolean valid = false;
+        int tripToReserve = -1;
+        String tripDate = "";
+        while (!valid){
+            System.out.println("Please pick a trip you would like to reserve.");
+            System.out.print("-->");
+            int userChoice;
+            userChoice = in.nextInt();
+            
+            try{
+                tripToReserve = ((trips.get(userChoice -1)).getKey()).intValue();
+                tripDate = (trips.get(userChoice -1)).getValue();
+                System.out.println("Trip " + tripToReserve + " on " + tripDate +" selected");
+                valid = true;
+            } catch (IndexOutOfBoundsException e){
+                System.out.println("Please choose a valid number option.");
+                System.out.print("-->");
+                valid = false;
+            }
+            if (tripToReserve < 0 || "".equals(tripDate)){
+                System.out.println("Trip not picked/reserved. Going back to main menu.");
+                try {
+                    con.setAutoCommit(true);
+                } catch (SQLException ex) {
+                    System.out.println("Database error enabling auto-commit. "
+                            + "Check internet connection.");
+                    System.exit(1);
+                }
+                return;
+            }
+        }
+        //choose seat class
+        valid = false;
+        System.out.println("Please choose what class you would like.");
+        String seatClass = "";
+        while (!valid){
+            
+            System.out.println("1: Economy");
+            System.out.println("2: Business");
+            System.out.println("3: First-Class");
+            System.out.print("-->");
+            
+            int userChoice;
+            try{
+                userChoice = in.nextInt();
+                in.nextLine();
+                
+                switch (userChoice){
+                    case 1:
+                        seatClass = "economy";
+                        valid = true;
+                        break;
+                    case 2:
+                        seatClass = "business";
+                        valid = true;
+                        break;
+                    case 3:
+                        seatClass = "first";
+                        valid = true;
+                        break;
+                    default:
+                        valid = false;
+                        System.out.println("Please enter a valid number choice.");
+                        break;
+                }
+            } catch (InputMismatchException e){
+                valid = false;
+                System.out.println("Please enter a valid number choice.");
+            }
+        }
+        
+        //get the legs as a resultSet
+        //"select leg_id from leg_of_trip where trip_num = " + tripToReserve + ""
+        //create random number for reservationID
+        //add the customer to each leg's first seat available in their class. 
+        /*select leg_id , seat_number
+        from leg L natural join plane_seats P
+        where seat_class = 'seatClass'
+        and leg_id = legsResult.getInt(1)
+        and seat_number not in
+            (select seat_number 
+            from reserved_seat
+            where leg_id = L.leg_id)
+        order by seat_number asc;
+        */
+        int reservationID = -1;
+        String legsQuery = "select leg_id from leg_of_trip where trip_num = " 
+                + tripToReserve + "";
+        int tripPrice = 0;
+        try {
+            
+            Statement legsStatement = con.createStatement();
+            ResultSet legsResult = legsStatement.executeQuery(legsQuery);
+            Statement legSeatStatement = con.createStatement();
+            while (legsResult.next()){
+                String legSeatQuery = "select leg_id , seat_number, price from leg L "
+                        + "natural join plane_seats P where seat_class = '" 
+                        + seatClass +"' and leg_id = " + legsResult.getInt(1) + " and seat_number "
+                        + "not in (select seat_number from reserved_seat where "
+                        + "leg_id = L.leg_id) order by seat_number asc";
+                ResultSet legSeatResult = legSeatStatement.executeQuery(legSeatQuery);
+                if (!legSeatResult.next()){
+                    System.out.println("We're sorry, one of the legs on that "
+                            + "flight is full. Please try another flight or "
+                            + "another seat class for the same flight.");
+                    try {
+                        con.setAutoCommit(true);
+                    } catch (SQLException ex) {
+                        System.out.println("Database error enabling auto-commit. "
+                                + "Check internet connection.");
+                        System.exit(1);
+                    }
+                    return;
+                }
+                else {
+                    //add customer and seat number to reserved_seat
+                    int legId = legSeatResult.getInt(1);
+                    int seat_number = legSeatResult.getInt(2);
+                    int legPrice = legSeatResult.getInt(3);
+                    while (!valid){
+                        Random randomReservationID = new Random();
+                        reservationID = 100000 + randomReservationID.nextInt(900000);
+                        try{
+                            Statement insertSeatStmt;
+                            insertSeatStmt = con.createStatement();
+                            int result = insertSeatStmt.executeUpdate("insert into "
+                                    + "reserved_seat values (" + 
+                                    reservationID + ", " + tripToReserve + 
+                                    ", " + seatClass + ", " + customerID + 
+                                    ", " + legId + ", " + seat_number + ")");
+                            System.out.println(result + " customer added"); //comment this out in final submission
+                            insertSeatStmt.close();
+                            valid = true;
+                            tripPrice += legPrice;
+                        } catch (SQLException e){
+                            valid = false; //random number generator failed to create a unique customer ID number
+                        }
+                    }
+                }
+                
+            }
+            
+        } catch (SQLException e){
+            System.out.println("Error: Database Error. Going back to main menu.");
+            try {
+                con.setAutoCommit(true);
+            } catch (SQLException ex) {
+                System.out.println("Database error ensabling auto-commit. "
+                        + "Check internet connection.");
+                System.exit(1);
+            }
+            return;
+        }
+        
+        //pick a credit card
+        
+        
+        //viewcreditcards()
+        ArrayList<Long> creditCards = viewCreditCards(customerID);
+        //handle user choice
+        System.out.println("Please enter the number of the credit card you would"
+                + " like to use to pay for your trip.");
+        boolean validCard = false;
+        int userChoice;
+        long cardNum = -1;
+        while(!validCard){
+            System.out.print("-->");
+            userChoice = in.nextInt();
+            in.nextLine();
+            try {
+                cardNum = (creditCards.get(userChoice-1)).longValue();
+                validCard = true;
+                
+            } catch (IndexOutOfBoundsException ex){
+                System.out.println("Please enter a valid number choice.");
+                validCard = false;
+            }
+        }
+        if(cardNum < 0){
+            System.out.println("Error with selecting credit card. Going back to"
+                    + " main menu");
+            try {
+                con.setAutoCommit(true);
+            } catch (SQLException ex) {
+                System.out.println("Database error enabling auto-commit. "
+                        + "Check internet connection.");
+                System.exit(1);
+            }
+            return;
+        }
+        //are you sure?
+        System.out.println("Are you sure you would like to place this reservation?");
+        System.out.println("Reservation ID: " + reservationID);
+        System.out.println("Flight Number: " + tripToReserve);
+        System.out.println("Date of Flight: " + tripDate);
+        System.out.println("Seat Class: " + seatClass);
+        System.out.println("Price: $" + tripPrice);
+        System.out.println("Purchased with Credit Card: " + cardNum);
+        System.out.println("");
+        System.out.println("1: Yes, make this reservation");
+        System.out.println("2: No, cancel reservation");
+        boolean validFinal = false;
+        int finalChoice;
+        while(!validFinal){
+            System.out.print("-->");
+            finalChoice = in.nextInt();
+            in.nextLine();
+            switch (finalChoice){
+                case 1: //yes
+                    boolean done = false;
+                    try {
+                        Statement stmtReservation;
+                        stmtReservation = con.createStatement();
+                        int resultReservation = stmtReservation.executeUpdate("insert "
+                                + "into reservation values ("+reservationID+", "
+                                +tripToReserve+", '"+tripDate+"', '"+seatClass+"', "
+                                +tripPrice+")");
+                        if(resultReservation > 0){
+                            Statement stmtCustReserved;
+                            stmtCustReserved = con.createStatement();
+                            int resultCustReserved = stmtCustReserved.executeUpdate("insert "
+                                    + "into customer_reserved values ("+customerID
+                                    +", "+reservationID+", "+tripToReserve+", '"
+                                    +seatClass+"')");
+                            if (resultCustReserved > 0){
+                                Statement stmtCredReserved;
+                                stmtCredReserved = con.createStatement();
+                                int resultCredReserved = stmtCredReserved.executeUpdate("insert "
+                                        + "into credit_card_reserved values ("+cardNum
+                                        +", "+reservationID+", "+tripToReserve+", '"
+                                        +seatClass+"')");
+                                if (resultCredReserved > 0){
+                                    done = true;
+                                }
+                                else {
+                                    done = false;
+                                }
+                                stmtCredReserved.close();
+                            }
+                            else {
+                                done = false;
+                            }
+                            stmtCustReserved.close();
+                        }
+                        else {
+                            done = false;
+                        }
+                        stmtReservation.close();
+                        if (done = true){
+                            con.commit();
+                        }
+                        else {
+                            con.rollback();
+                        }
+                        con.setAutoCommit(true);
+                    } catch (SQLException ex){
+                        System.out.println("Error: Database error. Please try again later.");
+                        try {
+                            con.rollback();
+                            con.setAutoCommit(true);
+                        } catch (SQLException ex1) { //please don't ever get to here
+                            System.out.println("Database rollback failed. Check internet connection. Exiting program.");
+                            System.exit(1);
+                        }
+                    }
+                    validFinal = true;
+                    break;
+                case 2: //no
+                    try {
+                        con.rollback();
+                        con.setAutoCommit(true);
+                    } catch (SQLException ex) {
+                        System.out.println("Database error enabling auto-commit. "
+                                + "Check internet connection.");
+                        System.exit(1);
+                    }
+                    validFinal = true;
+                    break;
+                default: //invalid choice
+                    validFinal = false;
+                    break;
+            }
+            
+        }
+    }
+    
+    private ArrayList<AbstractMap.SimpleEntry<Integer,String>> findTrips(String destination, String source){
+        ArrayList<AbstractMap.SimpleEntry<Integer,String>> trips = new ArrayList();
+        String q = "select trip_number, trip_date, price "
+                + "from trip where start_airport = '" + source 
+                + "' and end_airport = '" + destination + "' "
+                + "order by trip_date asc";
+        try{
+            Statement stmt;
+            stmt = con.createStatement();
+            ResultSet result = stmt.executeQuery(q);
+            while (result.next()){
+                AbstractMap.SimpleEntry<Integer, String> entry 
+                        = new AbstractMap.SimpleEntry(result.getInt(1), 
+                        result.getString(2));
+                trips.add(entry);
+                
+            }
+            stmt.close();
+        } catch(SQLException e){
+            System.out.println("Error: Database error fetching trips");
+        }
+            
+        return trips;
+    }
+    
+    private String pickAirportFromOptions(){
+        ArrayList<String> airports = new ArrayList();
+        String choice = "";
+        try{
+            Statement stmt;
+            stmt = con.createStatement();
+            String q = "select callsign, city from airport";
+            ResultSet result = stmt.executeQuery(q);
+            System.out.printf("%-3s\t%-20s\t%-3s\n", "#", "City", "Callsign");
+            System.out.printf("%-3s\t%-20s\t%-3s\n", "-", "----", "--------");
+            int i=1;
+            do {
+                String callsign = result.getString(1);
+                airports.add(callsign);
+                String city = result.getString(2);
+                System.out.printf("%-3d\t%-20s\t%-3s\n", i, city, callsign);
+                i++;
+            } while (result.next());
+            System.out.println("Please enter the number of the airport.");
+            
+            boolean valid = false;
+            while (!valid){
+                System.out.print("-->");
+                in.nextLine();
+                int userChoice = in.nextInt();
+                try{
+                    choice = airports.get(userChoice - 1);
+                    valid = true;
+                } catch (IndexOutOfBoundsException | InputMismatchException e){
+                    System.out.println("Please select a valid number choice.");
+                    valid = false;
+                }
+            }
+            System.out.println(choice + " chosen.");
+            stmt.close();
+        } catch (SQLException e){
+            System.out.println("Error: Database error when fetching airports.");
+        } 
+        return choice;
+    } 
+    
+    private ArrayList<Integer> viewReservedFlights(int customerID){
+        ArrayList<Integer> reservationIDs = new ArrayList<>();
+        try{
+            Statement reservationStmt = con.createStatement();
+            ResultSet result;
+            result = reservationStmt.executeQuery("select reservation_id, "
+                    + "trip_number, trip_date, seat_class, price, card_num "
+                    + "from customer_reserved natural join reservation natural "
+                    + "join credit_card_reserved natural join trip where "
+                    + "customer_id = " + customerID);
+            if (!result.next()){
+                System.out.println("You have no reservations on file.");
+                
+            }
+            else {
+                
+                int i = 1;
+                do{
+                    int reservation_id, trip_number, price;
+                    long card_num;
+                    String trip_date, seat_class;
+                    reservation_id = result.getInt(1);
+                    trip_number = result.getInt(2);
+                    trip_date = result.getString(3);
+                    seat_class = result.getString(4);
+                    price = result.getInt(5);
+                    card_num = result.getLong(6);
+                    System.out.println("Reservation " + i + ":");
+                    System.out.println("Reservation ID: " + reservation_id);
+                    System.out.println("Flight Number: " + trip_number);
+                    System.out.println("Date of Flight: " + trip_date);
+                    System.out.println("Seat Class: " + seat_class);
+                    System.out.println("Price: $" + price);
+                    System.out.println("Purchased with Credit Card: " + card_num);
+                    System.out.println("");
+                    /*
+                    
+                    
+                    */
+                    i++;
+                } while (result.next());
+            }
+        } catch (SQLException e){
+                System.out.println("Error: Database error, please try again.");
+        }
+        return reservationIDs;
     }
     
     private void cancelReservedFlight(int customerID){
-        
+        //remove from reserved_seat
+        //remove from credit_card_reserved
+        //remove from customer_reserved
+        //remove from reservation
     }
     
     private void printOptions(){
