@@ -994,10 +994,126 @@ public class Customer {
     }
     
     private void cancelReservedFlight(int customerID){
-        //remove from reserved_seat
-        //remove from credit_card_reserved
-        //remove from customer_reserved
-        //remove from reservation
+        System.out.println("Listing all of your reservations on file...");
+        if (!hasReservations(customerID)){
+            System.out.println("You have no reservations on file. Please add one"
+                    + " before trying to delete one.");
+        }
+        ArrayList<Integer> reservations = viewReservedFlights(customerID);
+        System.out.println("Please enter the number of the reservation you "
+                + "would like to cancel.");
+
+        boolean valid = false;
+        int userChoice;
+        while(!valid){
+            System.out.print("-->");
+            userChoice = in.nextInt();
+            in.nextLine();
+            int reservation = -1;
+            try {
+                reservation = (reservations.get(userChoice-1)).intValue();
+                con.setAutoCommit(false);
+                //remove from reserved_seat
+                Statement stmtReservedSeat;
+                stmtReservedSeat = con.createStatement();
+
+                String deleteReservedSeats = "delete from reserved_seat where "
+                        + "customer_id = " + customerID + " and reservation_id"
+                        + " = " + reservation + "";
+                int resultReservedSeats = stmtReservedSeat.executeUpdate(deleteReservedSeats);
+                if (resultReservedSeats > 0){
+                    //remove from credit_card_reserved
+                    String deleteCreditCardReserved = "delete from credit_card_reserved "
+                            + "where reservation_id = " + reservation + "";
+                    Statement stmtCreditCardReserved;
+                    stmtCreditCardReserved = con.createStatement();
+                    int resultCreditCardReserved;
+                    resultCreditCardReserved = stmtCreditCardReserved.executeUpdate(deleteCreditCardReserved);
+                    if(resultCreditCardReserved == 1){
+                        //remove from customer_reserved
+                        String deleteCustomerReserved = "delete from "
+                                + "customer_reserved where customer_id = " 
+                                + customerID + " and reservation_id = " 
+                                + reservation + "";
+                        Statement stmtCustomerReserved;
+                        stmtCustomerReserved = con.createStatement();
+                        int resultCustomerReserved;
+                        resultCustomerReserved = stmtCustomerReserved.executeUpdate(deleteCustomerReserved);
+                        if(resultCustomerReserved == 1){
+                            //remove from reservation
+                            String deleteReservation = "delete from reservation "
+                                    + "where reservation_id = " + reservation;
+                            Statement stmtReservation;
+                            stmtReservation = con.createStatement();
+                            int resultReservation;
+                            resultReservation = stmtReservation.executeUpdate(deleteReservation);
+                            if (resultReservation == 1){
+                                System.out.println("Reservation successfully deleted from your account.");
+                                valid = true;
+                                con.commit();
+                                con.setAutoCommit(true);
+                            }
+                            else {
+                                System.out.println("Update of reservation failed.");
+                                valid = false;
+                                con.rollback();
+                                con.setAutoCommit(true);
+                            }
+                            stmtReservation.close();
+                        }
+                        else {
+                            System.out.println("Update of credit_card_reserved failed.");
+                            valid = false;
+                            con.rollback();
+                            con.setAutoCommit(true);
+                        }
+                        stmtCustomerReserved.close();
+                        
+                    }
+                    else {
+                        System.out.println("Update of customer_reserved failed.");
+                        valid = false;
+                        con.rollback();
+                        con.setAutoCommit(true);
+                    }
+                    stmtCreditCardReserved.close();
+                }
+                else {
+                    System.out.println("Update of reserved_seat failed.");
+                    con.rollback();
+                    con.setAutoCommit(true);
+                    valid = false;
+                }
+                stmtReservedSeat.close();
+            } catch (SQLException ex){
+                System.out.println("Error: Database error. Please try again later.");
+                try {
+                    con.rollback();
+                    con.setAutoCommit(true);
+                } catch (SQLException ex1) { //please don't ever get to here
+                    System.out.println("Database rollback failed. Check internet connection. Exiting program.");
+                    System.exit(1);
+                }
+                valid = true;
+            } catch (IndexOutOfBoundsException ex){
+                System.out.println("Please enter a valid number choice.");
+                try {
+                    con.rollback();
+                    con.setAutoCommit(true);
+                } catch (SQLException ex1) { //please don't ever get to here
+                    System.out.println("Database rollback failed. Check internet connection. Exiting program.");
+                    System.exit(1);
+                }
+                valid = false;
+            }
+            if (reservation < 0){
+                System.out.println("Error: Reservation not chosen");
+            }
+        }
+        
+        
+        
+        
     }
     
     private void printOptions(){
