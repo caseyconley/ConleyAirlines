@@ -334,16 +334,20 @@ public class Customer {
         }
         else{
             ArrayList<Long> cards = viewCreditCards(customerID);
-            System.out.println("Please enter the number of the credit card you would like to remove.");
-            
+            System.out.println("Please enter the number of the credit card "
+                    + "you would like to remove, or enter 0 to go back.");
             boolean valid = false;
             int userChoice;
+            long card_num;
+            card_num = -1;
             while(!valid){
                 System.out.print("-->");
                 userChoice = in.nextInt();
                 in.nextLine();
-                long card_num;
-                card_num = -1;
+                if(userChoice == 0){
+                    return;
+                }
+                
                 try {
                     card_num = (cards.get(userChoice-1)).longValue();
                     con.setAutoCommit(false);
@@ -400,6 +404,9 @@ public class Customer {
                     }
                     valid = false;
                 }
+            }
+            if (card_num < 0){
+                 System.out.println("Error: Credit card not chosen");
             }
         }
     }
@@ -1001,15 +1008,18 @@ public class Customer {
         }
         ArrayList<Integer> reservations = viewReservedFlights(customerID);
         System.out.println("Please enter the number of the reservation you "
-                + "would like to cancel.");
+                + "would like to cancel, or enter 0 to go back.");
 
         boolean valid = false;
         int userChoice;
+        int reservation = -1;
         while(!valid){
             System.out.print("-->");
             userChoice = in.nextInt();
             in.nextLine();
-            int reservation = -1;
+            if(userChoice == 0){
+                    return;
+            }
             try {
                 reservation = (reservations.get(userChoice-1)).intValue();
                 con.setAutoCommit(false);
@@ -1106,14 +1116,11 @@ public class Customer {
                 }
                 valid = false;
             }
-            if (reservation < 0){
-                System.out.println("Error: Reservation not chosen");
-            }
+            
         }
-        
-        
-        
-        
+        if (reservation < 0){
+                System.out.println("Error: Reservation not chosen");
+        }
     }
     
     private void printOptions(){
