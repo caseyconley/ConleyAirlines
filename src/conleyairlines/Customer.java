@@ -39,7 +39,7 @@ public class Customer {
                 switch(userChoice){
                     case 1:
                         System.out.println("Manage credit card info option chosen\n");
-                        manageCreditCardInfo(customerID);
+                        manageCreditCardInfo(customerID, false);
                         done = false;
                         break;
                     case 2:
@@ -188,13 +188,19 @@ public class Customer {
         return customerID;
     }
     
-    private void manageCreditCardInfo(int customerID){
-        
+    public void manageCreditCardInfo(int customerID, boolean fromManager){
+        String view;
+        if (fromManager){
+            view = "2: View customer's credit cards";
+        }
+        else {
+            view = "2: View my credit card info";
+        }
         boolean done = false;
         while(!done){
             System.out.println("What would you like to do?");
             System.out.println("1: Add a credit card");
-            System.out.println("2: View my credit card info");
+            System.out.println(view);
             System.out.println("3: Delete a credit card");
             System.out.println("4: Go back");
             System.out.print("-->");
