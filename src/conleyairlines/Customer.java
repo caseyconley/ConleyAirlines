@@ -45,6 +45,7 @@ public class Customer {
                     case 2:
                         System.out.println("Make a reservation option chosen\n");
                         makeAReservation(customerID);
+                        in.nextLine();
                         done = false;
                         break;
                     case 3:
@@ -708,10 +709,10 @@ public class Customer {
                         +tripToReserve+", '"+tripDate+"', '"+seatClass+"', "
                         +tripPrice+")");
                 if (resultReservation < 1){
-                    randomValid = true;
+                    randomValid = false;
                 }
                 else {
-                    randomValid = false;
+                    randomValid = true;
                 }
             } catch(SQLException e){
                 randomValid = false;
@@ -972,11 +973,12 @@ public class Customer {
         try{
             Statement reservationStmt = con.createStatement();
             ResultSet result;
-            result = reservationStmt.executeQuery("select reservation_id, "
-                    + "trip_number, trip_date, seat_class, price, card_num "
-                    + "from customer_reserved natural join reservation natural "
-                    + "join credit_card_reserved natural join trip where "
-                    + "customer_id = " + customerID);
+            String reservationsQuery = "select reservation_id, "
+                    + "trip_number, to_char(trip_date, 'DD-MON-YYYY'), "
+                    + "seat_class, card_num from "
+                    + "customer_reserved natural join reservation natural "
+                    + "join credit_card_reserved where customer_id = "+ customerID;
+            result = reservationStmt.executeQuery(reservationsQuery);
             if (!result.next()){
                 System.out.println("You have no reservations on file.");
                 
@@ -985,21 +987,20 @@ public class Customer {
                 
                 int i = 1;
                 do{
-                    int reservation_id, trip_number, price;
+                    int reservation_id, trip_number;
                     long card_num;
                     String trip_date, seat_class;
                     reservation_id = result.getInt(1);
+                    reservationIDs.add(reservation_id);
                     trip_number = result.getInt(2);
                     trip_date = result.getString(3);
                     seat_class = result.getString(4);
-                    price = result.getInt(5);
-                    card_num = result.getLong(6);
+                    card_num = result.getLong(5);
                     System.out.println("Reservation " + i + ":");
                     System.out.println("Reservation ID: " + reservation_id);
                     System.out.println("Flight Number: " + trip_number);
                     System.out.println("Date of Flight: " + trip_date);
                     System.out.println("Seat Class: " + seat_class);
-                    System.out.println("Price: $" + price);
                     System.out.println("Purchased with Credit Card: " + card_num);
                     System.out.println("");
                     /*
