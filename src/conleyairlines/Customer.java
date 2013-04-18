@@ -502,6 +502,7 @@ public class Customer {
             if("".equals(destination)){
                 System.out.println("Airport not chosen. Please try again.");
                 try {
+                    con.rollback();
                     con.setAutoCommit(true);
                 } catch (SQLException ex) {
                     System.out.println("Database error enabling auto-commit. "
@@ -516,6 +517,7 @@ public class Customer {
             if("".equals(source)){
                 System.out.println("Airport not chosen. Please try again.");
                 try {
+                    con.rollback();
                     con.setAutoCommit(true);
                 } catch (SQLException ex) {
                     System.out.println("Database error enabling auto-commit. "
@@ -544,6 +546,7 @@ public class Customer {
                                 break;
                             case 2:
                                 try {
+                                    con.rollback();
                                     con.setAutoCommit(true);
                                 } catch (SQLException ex) {
                                     System.out.println("Database error enabling auto-commit. "
@@ -592,6 +595,7 @@ public class Customer {
             System.out.println("Error: Database error while listing trips "
                     + "found. Going back to main menu.");
             try {
+                con.rollback();
                 con.setAutoCommit(true);
             } catch (SQLException ex) {
                 System.out.println("Database error enabling auto-commit. "
@@ -624,6 +628,7 @@ public class Customer {
             if (tripToReserve < 0 || "".equals(tripDate)){
                 System.out.println("Trip not picked/reserved. Going back to main menu.");
                 try {
+                    con.rollback();
                     con.setAutoCommit(true);
                 } catch (SQLException ex) {
                     System.out.println("Database error enabling auto-commit. "
@@ -688,9 +693,35 @@ public class Customer {
         order by seat_number asc;
         */
         int reservationID = -1;
-        String legsQuery = "select leg_id from leg_of_trip where trip_num = " 
-                + tripToReserve + "";
         int tripPrice = 0;
+        // randomly generate a reservationID
+        boolean randomValid = false;
+        while (!randomValid){
+            int resultReservation = 0;
+            try{
+                Random randomReservationID = new Random();
+                reservationID = 100000 + randomReservationID.nextInt(900000);
+                Statement stmtReservation;
+                stmtReservation = con.createStatement();
+                resultReservation = stmtReservation.executeUpdate("insert "
+                        + "into reservation values ("+reservationID+", "
+                        +tripToReserve+", '"+tripDate+"', '"+seatClass+"', "
+                        +tripPrice+")");
+                if (resultReservation < 1){
+                    randomValid = true;
+                }
+                else {
+                    randomValid = false;
+                }
+            } catch(SQLException e){
+                randomValid = false;
+            }
+        }
+        
+        
+        String legsQuery = "select leg_id from leg_of_trip where trip_number = " 
+                + tripToReserve + "";
+        
         try {
             
             Statement legsStatement = con.createStatement();
@@ -708,6 +739,7 @@ public class Customer {
                             + "flight is full. Please try another flight or "
                             + "another seat class for the same flight.");
                     try {
+                        con.rollback();
                         con.setAutoCommit(true);
                     } catch (SQLException ex) {
                         System.out.println("Database error enabling auto-commit. "
@@ -721,32 +753,23 @@ public class Customer {
                     int legId = legSeatResult.getInt(1);
                     int seat_number = legSeatResult.getInt(2);
                     int legPrice = legSeatResult.getInt(3);
-                    while (!valid){
-                        Random randomReservationID = new Random();
-                        reservationID = 100000 + randomReservationID.nextInt(900000);
-                        try{
-                            Statement insertSeatStmt;
-                            insertSeatStmt = con.createStatement();
-                            int result = insertSeatStmt.executeUpdate("insert into "
-                                    + "reserved_seat values (" + 
-                                    reservationID + ", " + tripToReserve + 
-                                    ", " + seatClass + ", " + customerID + 
-                                    ", " + legId + ", " + seat_number + ")");
-                            System.out.println(result + " customer added"); //comment this out in final submission
-                            insertSeatStmt.close();
-                            valid = true;
-                            tripPrice += legPrice;
-                        } catch (SQLException e){
-                            valid = false; //random number generator failed to create a unique customer ID number
-                        }
-                    }
+                    Statement insertSeatStmt;
+                    insertSeatStmt = con.createStatement();
+                    String insertSeatQuery = "insert into "
+                            + "reserved_seat values (" + 
+                            reservationID + ", " + tripToReserve + 
+                            ", '" + seatClass + "', " + customerID + 
+                            ", " + legId + ", " + seat_number + ")";
+                    int result = insertSeatStmt.executeUpdate(insertSeatQuery);
+                    System.out.println(result + " customer added"); //comment this out in final submission
+                    insertSeatStmt.close();
+                    tripPrice += legPrice;
                 }
-                
             }
-            
         } catch (SQLException e){
             System.out.println("Error: Database Error. Going back to main menu.");
             try {
+                con.rollback();
                 con.setAutoCommit(true);
             } catch (SQLException ex) {
                 System.out.println("Database error ensabling auto-commit. "
@@ -784,6 +807,7 @@ public class Customer {
             System.out.println("Error with selecting credit card. Going back to"
                     + " main menu");
             try {
+                con.rollback();
                 con.setAutoCommit(true);
             } catch (SQLException ex) {
                 System.out.println("Database error enabling auto-commit. "
@@ -813,43 +837,31 @@ public class Customer {
                 case 1: //yes
                     boolean done = false;
                     try {
-                        Statement stmtReservation;
-                        stmtReservation = con.createStatement();
-                        int resultReservation = stmtReservation.executeUpdate("insert "
-                                + "into reservation values ("+reservationID+", "
-                                +tripToReserve+", '"+tripDate+"', '"+seatClass+"', "
-                                +tripPrice+")");
-                        if(resultReservation > 0){
-                            Statement stmtCustReserved;
-                            stmtCustReserved = con.createStatement();
-                            int resultCustReserved = stmtCustReserved.executeUpdate("insert "
-                                    + "into customer_reserved values ("+customerID
+                        Statement stmtCustReserved;
+                        stmtCustReserved = con.createStatement();
+                        int resultCustReserved = stmtCustReserved.executeUpdate("insert "
+                                + "into customer_reserved values ("+customerID
+                                +", "+reservationID+", "+tripToReserve+", '"
+                                +seatClass+"')");
+                        if (resultCustReserved > 0){
+                            Statement stmtCredReserved;
+                            stmtCredReserved = con.createStatement();
+                            int resultCredReserved = stmtCredReserved.executeUpdate("insert "
+                                    + "into credit_card_reserved values ("+cardNum
                                     +", "+reservationID+", "+tripToReserve+", '"
                                     +seatClass+"')");
-                            if (resultCustReserved > 0){
-                                Statement stmtCredReserved;
-                                stmtCredReserved = con.createStatement();
-                                int resultCredReserved = stmtCredReserved.executeUpdate("insert "
-                                        + "into credit_card_reserved values ("+cardNum
-                                        +", "+reservationID+", "+tripToReserve+", '"
-                                        +seatClass+"')");
-                                if (resultCredReserved > 0){
-                                    done = true;
-                                }
-                                else {
-                                    done = false;
-                                }
-                                stmtCredReserved.close();
+                            if (resultCredReserved > 0){
+                                done = true;
                             }
                             else {
                                 done = false;
                             }
-                            stmtCustReserved.close();
+                            stmtCredReserved.close();
                         }
                         else {
                             done = false;
                         }
-                        stmtReservation.close();
+                        stmtCustReserved.close();
                         if (done = true){
                             con.commit();
                         }
