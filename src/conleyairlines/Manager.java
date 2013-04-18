@@ -40,35 +40,45 @@ public class Manager {
                     done = false;
                 }
                 else{
+                    int customerID;
                     switch(userChoice){
                         case 1:
                             System.out.println("Add/View/Remove customer reservations chosen\n");
                             System.out.println("Please enter the customer's ID number.");
                             in.nextLine();
-                            int customerID = in.nextInt();
-                            Customer c = new Customer(con, in);
-                            c.manageCreditCardInfo(customerID, true);
+                            customerID = in.nextInt();
+                            Customer cTick = new Customer(con, in);
+                            cTick.makeAReservation(customerID, true);
                             done = false;
                             break;
                         case 2:
                             System.out.println("Add/View/Remove legs chosen\n");
                             in.nextLine();
+                            //manageLegs();
                             done = false;
                             break;
                         case 3:
                             System.out.println("Add/View/Remove flights\n");
+                            //manageFlights();
                             done = false;
                             break;
                         case 4:
                             System.out.println("Add/View/Remove pilots chosen\n");
+                            //managePilots();
                             done = false;
                             break;
                         case 5:
                             System.out.println("Add/View/Remove planes chosen\n");
+                            //managePlanes();
                             done = false;
                             break;
                         case 6:
                             System.out.println("Add/View/Remove customer credit cards chosen\n");
+                            Customer cTech = new Customer(con,in);
+                            System.out.println("Please enter the customer's ID number.");
+                            in.nextLine();
+                            customerID = in.nextInt();
+                            cTech.manageCreditCardInfo(customerID, true);
                             done = false;
                             break;
                         case 7:

@@ -44,7 +44,7 @@ public class Customer {
                         break;
                     case 2:
                         System.out.println("Make a reservation option chosen\n");
-                        makeAReservation(customerID);
+                        makeAReservation(customerID, false);
                         in.nextLine();
                         done = false;
                         break;
@@ -487,12 +487,34 @@ public class Customer {
         }
     }
     
-    private void makeAReservation(int customerID){
+    public void makeAReservation(int customerID, boolean fromManager){
+        String promptAirportTo, promptAirportFrom, promptSeatClass, 
+                promptCreditCard, noCreditCards, reservationPlaced;
+        
+        if (fromManager){
+            promptAirportTo = "Please indicate the starting airport.";
+            promptAirportFrom = "Please indicate the destination airport.";
+            promptSeatClass = "Please indicate the seat class.";
+            promptCreditCard = "Please indicate which credit card the customer would like to pay with.";
+            noCreditCards = "The customer chosen does not have any credit cards "
+                    + "on file. Please have the customer add one or add one for them.";
+            reservationPlaced = "Reservation successfully made.";
+        }
+        else {
+            promptAirportTo = "Please tell us where you're flying to.";
+            promptAirportFrom = "Please tell us where you're flying from.";
+            promptSeatClass = "Please choose what class you would like.";
+            promptCreditCard = "Please enter the number of the credit card you would"
+                + " like to use to pay for your trip.";
+            noCreditCards = "You don't have any credit cards on file, "
+                    + "please add one before making a reservation.";
+            reservationPlaced = "Reservation successfully placed. Thank you.";
+        }
         if(!hasCreditCards(customerID)){
-            System.out.println("You don't have any credit cards on file, "
-                    + "please add one before making a reservation.");
+            System.out.println(noCreditCards);
             return;
         }
+        
         try {
             con.setAutoCommit(false);
         } catch (SQLException ex) {
@@ -504,7 +526,7 @@ public class Customer {
         ArrayList<AbstractMap.SimpleEntry<Integer,String>> trips = new ArrayList();
         //find trips
         while (!tripsFound){
-            System.out.println("Please tell us where you're flying to.");
+            System.out.println(promptAirportTo);
             String destination = pickAirportFromOptions();
             if("".equals(destination)){
                 System.out.println("Airport not chosen. Please try again.");
@@ -519,7 +541,7 @@ public class Customer {
                 return;
             }
 
-            System.out.println("Please tell us where you're flying from.");
+            System.out.println(promptAirportFrom);
             String source = pickAirportFromOptions();
             if("".equals(source)){
                 System.out.println("Airport not chosen. Please try again.");
@@ -647,7 +669,7 @@ public class Customer {
         }
         //choose seat class
         valid = false;
-        System.out.println("Please choose what class you would like.");
+        System.out.println(promptSeatClass); //promptSeatClass
         String seatClass = "";
         while (!valid){
             
@@ -792,8 +814,7 @@ public class Customer {
         //viewcreditcards()
         ArrayList<Long> creditCards = viewCreditCards(customerID);
         //handle user choice
-        System.out.println("Please enter the number of the credit card you would"
-                + " like to use to pay for your trip.");
+        System.out.println(promptCreditCard);//promptCreditCard
         boolean validCard = false;
         int userChoice;
         long cardNum = -1;
@@ -859,6 +880,7 @@ public class Customer {
                                     +seatClass+"')");
                             if (resultCredReserved > 0){
                                 done = true;
+                                System.out.println(reservationPlaced);
                             }
                             else {
                                 done = false;
