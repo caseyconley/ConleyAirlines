@@ -196,6 +196,7 @@ public class Manager {
         System.out.println("6: Add/View/Remove customer credit cards");
         System.out.println("7: Go back");
     }
+    
     private void printManagerOptions(){
         System.out.println("1: Ticket Clerk"); //add customer reservations
         System.out.println("2: General Manager"); //add customer reservations, add flights/legs, add pilots, add planes
