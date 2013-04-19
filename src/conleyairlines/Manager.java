@@ -523,7 +523,8 @@ public class Manager {
             System.out.println("Database error. Exiting program");
             System.exit(1);
         }
-        
+        System.out.println("Please indicate the type of plane (747, 737, "
+                + "787, 350, 380).");
         int planeType = 0;
         while(!valid){
             try {
@@ -573,7 +574,7 @@ public class Manager {
                     stmtIsType = con.createStatement();
                     int resultIsType = stmtIsType.executeUpdate(v);
                     if (resultIsType > 0){
-                        System.out.println( result + " plane of type" + planeType + "added: " + randomID + "");
+                        System.out.println( result + " plane of type " + planeType + " added: " + randomID + "");
                         con.commit();
                         valid = true;
                     }
@@ -612,7 +613,7 @@ public class Manager {
         try{
             Statement viewStmt;
             viewStmt = con.createStatement();
-            ResultSet viewResult = viewStmt.executeQuery("select * from planes");
+            ResultSet viewResult = viewStmt.executeQuery("select * from plane");
             ResultSetMetaData viewMetaData = viewResult.getMetaData();
             if(!viewResult.next()) {
                 System.out.println("No planes exist in the system.");
@@ -620,13 +621,13 @@ public class Manager {
             else {
                 int numColumns = viewMetaData.getColumnCount();
                 int width;
-                System.out.printf("%-6s\t%-19s\t%-8s", "Plane ID", "Date Put In Service", "Last Name");
+                System.out.printf("%-16s\t%-19s\t%-8s", "Plane ID", "Date Put In Service", "Last Name");
                 System.out.println("");
                 for (int h = 1; h<=numColumns; h++){
                     width = viewMetaData.getPrecision(h);
                     for (int g = 1; g <= width; g++){
                         if (g==2){
-                            System.out.println("----------");
+                            System.out.print("----------");
                         }
                         System.out.print("-");
                     }
@@ -634,14 +635,9 @@ public class Manager {
                 }
                 System.out.println("");
                 do{
-                    for (int i = 1; i<=numColumns; i++){
-                        width = viewMetaData.getPrecision(i);
-                        if (i==2){
-                            width+=10;
-                        }
-                        System.out.printf("%-" + width + "s\t", viewResult.getString(i));
-                    }
-                    System.out.println("");
+                    System.out.printf("%16s\t%-19s\t%-8s\n",
+                            viewResult.getString(1), viewResult.getString(2), 
+                            viewResult.getString(3));
                 } while (viewResult.next());
 
             }
@@ -660,7 +656,7 @@ public class Manager {
             in.nextLine();
             try {
                 String u;
-                u = "delete from plane where id = " + planeID;
+                u = "delete from plane where plane_id = " + planeID;
                 Statement stmt;
                 stmt = con.createStatement();
                 int result;
