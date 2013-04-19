@@ -858,7 +858,9 @@ public class Manager {
     }
     
     private void removeFlight(){
-        
+        //if trip exists
+            //delete all legs from leg_of_trip
+            //delete from trip
     }
     
     //manage legs
@@ -944,7 +946,12 @@ public class Manager {
     }
     
     private void addLeg(){
-        
+        //find plane
+        //find pilot
+        //randomly generate leg_id
+        //input start airport
+        //input end airport
+        //insert into leg, leg_to, leg_from
     }
     
     private void viewLegs(int tripNumber){ 
@@ -1015,6 +1022,11 @@ public class Manager {
     }
     
     private void removeLeg(){
-        
+        //select * from leg
+        //input legID
+        //if (result.next()) on (select * from leg)
+            //delete from leg_of_trip where leg_id = legID
+            //delete from leg where leg_id = legID
+        //else redo input legID
     }
 }
