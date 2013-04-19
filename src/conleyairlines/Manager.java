@@ -367,11 +367,12 @@ public class Manager {
         boolean valid = false;
         System.out.println("Please enter the pilot's first name.");
         System.out.print("-->");
+        in.nextLine();
         String fname = in.nextLine();
-        System.out.println("Please enter the pilot's first name.");
+        System.out.println("Please enter the pilot's last name.");
         System.out.print("-->");
         String lname = in.nextLine();
-        while(valid){
+        while(!valid){
             try {
                 String u;
                 Random rnd = new Random();
@@ -1350,21 +1351,24 @@ public class Manager {
                     + "T.airport as Destination,"
                     + "to_char(time_arrival, 'DD-MON-YYYY') as TimeArrival, "
                     + "price from leg L join leg_to T on t.leg_id = l.leg_id "
-                    + "join leg_from F on f.leg_id = l.leg_id;";
+                    + "join leg_from F on f.leg_id = l.leg_id";
         }
         else {
-            q = "select l.leg_id as LegID, plane_id as PlaneID, pilot_id as PilotID, "
+            q = "select L.leg_id as LegID, "
+                    + "plane_id as PlaneID, "
+                    + "pilot_id as PilotID, "
                     + "F.airport as StartingPoint, "
                     + "to_char(time_departure, 'DD-MON-YYYY') as Time_Departure, "
                     + "T.airport as Destination, "
-                    + "to_char(time_arrival, 'DD-MON-YYYY') as TimeArrival, price "
-                    + "from leg L join leg_to T on t.leg_id = l.leg_id "
-                    + "join leg_from F on f.leg_id = l.leg_id "
+                    + "to_char(time_arrival, 'DD-MON-YYYY') as TimeArrival, "
+                    + "price "
+                    + "from leg L join leg_to T on T.leg_id = L.leg_id "
+                    + "join leg_from F on F.leg_id = L.leg_id "
                     + "where exists "
                     + "(select leg_id "
                     + "from leg_of_trip "
-                    + "where trip_number = " + tripNumber
-                    + "and leg_id = l.leg_id);";
+                    + "where trip_number = " + tripNumber +" "
+                    + "and leg_id = L.leg_id)";
         }
         Statement stmt;
         try {
