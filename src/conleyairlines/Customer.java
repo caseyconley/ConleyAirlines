@@ -929,7 +929,7 @@ public class Customer {
         }
     }
     
-    private ArrayList<AbstractMap.SimpleEntry<Integer,String>> findTrips(String destination, String source){
+    public ArrayList<AbstractMap.SimpleEntry<Integer,String>> findTrips(String destination, String source){
         ArrayList<AbstractMap.SimpleEntry<Integer,String>> trips = new ArrayList();
         String q = "select trip_number, to_char(trip_date, 'DD-MON-YYYY'), price "
                 + "from trip where start_airport = '" + source 
@@ -954,7 +954,7 @@ public class Customer {
         return trips;
     }
     
-    private String pickAirportFromOptions(){
+    public String pickAirportFromOptions(){
         ArrayList<String> airports = new ArrayList();
         String choice = "";
         try{
@@ -996,7 +996,8 @@ public class Customer {
         return choice;
     } 
     
-    private ArrayList<Integer> viewReservedFlights(int customerID){
+    /*display legs if I have time*/
+    private ArrayList<Integer> viewReservedFlights(int customerID){ 
         ArrayList<Integer> reservationIDs = new ArrayList<>();
         try{
             Statement reservationStmt = con.createStatement();
@@ -1032,8 +1033,7 @@ public class Customer {
                     System.out.println("Purchased with Credit Card: " + card_num);
                     System.out.println("");
                     /*
-                    
-                    
+                    display legs too if I have time
                     */
                     i++;
                 } while (result.next());

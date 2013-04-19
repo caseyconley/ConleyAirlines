@@ -50,6 +50,7 @@ public class ConleyAirlines {
             while(!validInput){
                 int userChoice;
                 try{
+                    
                     userChoice = in.nextInt();
                     switch(userChoice){
                         case 1:
@@ -62,6 +63,8 @@ public class ConleyAirlines {
                         case 2:
                             //Manager interface open
                             System.out.println("Initializing Manager interface...\n");
+                            Manager m = new Manager(con, in);
+                            m.openInterface();
                             validInput = true;
                             break;
                         case 3:
@@ -104,7 +107,6 @@ public class ConleyAirlines {
                 }
                 System.out.println("What would you like to do?");
                 printOptions();
-                in.nextLine();
             }
         }
     }
