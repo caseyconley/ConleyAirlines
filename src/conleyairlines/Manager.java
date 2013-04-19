@@ -2,8 +2,6 @@
 package conleyairlines;
 import java.sql.*;
 import java.util.*;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 /**
  *
  * @author Casey Conley
@@ -29,12 +27,13 @@ public class Manager {
         boolean[] managerType = new boolean[6];
         managerType = selectManagerType();
         boolean quit = true;
-        for(int i = 0; i<6; i++){
+        for(int i = 0; i<6 && quit; i++){
             quit = quit ^ managerType[i];
         }
         if(!quit){
             System.out.println("What action would you like to perform?");
             printOptions();
+            
             boolean done = false;
             while(!done){
                 int userChoice;
@@ -51,16 +50,12 @@ public class Manager {
                         switch(userChoice){
                             case 1:
                                 System.out.println("Add/View/Remove customer reservations chosen\n");
-                                System.out.println("Please enter the customer's ID number.");
-                                in.nextLine();
-                                customerID = in.nextInt();
-                                Customer cTick = new Customer(con, in);
-                                cTick.makeAReservation(customerID, true);
+                                
+                                manageReservations();
                                 done = false;
                                 break;
                             case 2:
                                 System.out.println("Add/View/Remove legs chosen\n");
-                                in.nextLine();
                                 manageLegs();
                                 done = false;
                                 break;
@@ -118,6 +113,76 @@ public class Manager {
             }
         }
         
+    }
+    
+    private void manageReservations(){
+        boolean done = false;
+        while(!done){
+            System.out.println("What would you like to do?");
+            System.out.println("1: Add a customer resrevation");
+            System.out.println("2: View customer reservations");
+            System.out.println("3: Cancel customer reservation");
+            System.out.println("4: Go back");
+            System.out.print("-->");
+            int userChoice;
+            try{
+                userChoice = in.nextInt();
+                in.nextLine();
+                int customerID;
+                switch(userChoice){
+                    case 1:
+                        System.out.println("Add a reservation option...\n");
+                        System.out.println("Please enter the customer's ID number.");
+                        customerID = in.nextInt();
+                        Customer cAdd = new Customer(con, in);
+                        cAdd.makeAReservation(customerID, true);
+                        done = false;
+                        break;
+                    case 2:
+                        System.out.println("View reservations option...\n");
+                        System.out.println("Please enter the customer's ID number.");
+                        customerID = in.nextInt();
+                        Customer cView = new Customer(con, in);
+                        cView.viewReservedFlights(customerID);
+                        done = false;
+                        break;
+                    case 3:
+                        System.out.println("Remove a reservation option...\n");
+                        System.out.println("Please enter the customer's ID number.");
+                        customerID = in.nextInt();
+                        Customer cCancel = new Customer(con, in);
+                        cCancel.cancelReservedFlight(customerID);
+                        done = false;
+                        break;
+                    case 4:
+                        System.out.println("Exiting reservation management...\n");
+                        done = true;
+                        break;
+                    default:
+                        System.out.println("Error: Please enter a valid number choice.");
+                        in.nextLine();
+                        done = false;
+                        break;
+                }
+            } catch (InputMismatchException ex) {
+                System.out.println("Error: Please enter a valid number choice.");
+                
+                done = false;
+            }
+            catch (IllegalStateException ex) {
+                in = new Scanner(System.in);
+                System.out.println("Error: Internal Error, scanner closed, "
+                        + "reinitialized. \nPlease try again.");
+                
+                done = false;
+            }
+//            catch (SQLException ex){
+//                System.out.println("General database Error");
+//            }
+            if(!done){
+                System.out.println("What action would you like to perform?");
+            }
+        }
     }
     
     private boolean[] selectManagerType(){
@@ -223,6 +288,7 @@ public class Manager {
         System.out.println("5: Add/View/Remove planes");
         System.out.println("6: Add/View/Remove customer credit cards");
         System.out.println("7: Go back");
+        System.out.print("-->");
     }
     
     private void printManagerOptions(){
@@ -232,6 +298,7 @@ public class Manager {
         System.out.println("4: Pilot Manager"); //add pilots, add planes, add legs
         System.out.println("5: Customer Support"); //add customer reservations, add credit cards
         System.out.println("6: Exit Manager Interface");
+        System.out.print("-->");
     }
     
     //implement these with the model of manageCreditCardInfo()
@@ -709,6 +776,12 @@ public class Manager {
     private void addFlight(){
         boolean done = false;
         ArrayList<AbstractMap.SimpleEntry<Integer,String>> trips = new ArrayList();
+        try {
+            con.setAutoCommit(false);
+        } catch (SQLException ex) {
+            System.out.println("Database Error, check internet connection.");
+            System.exit(1);
+        }
         String promptAirportTo, promptAirportFrom;
         promptAirportTo = "Please indicate the starting airport.";
         promptAirportFrom = "Please indicate the destination airport.";
@@ -751,13 +824,19 @@ public class Manager {
                 }
                
                 boolean randomValid = false;
+                int randomID = 0;
+                String currentTime = "";
                 while(!randomValid){
                     try{
                         Random rnd = new Random();
-                        int randomID = rnd.nextInt(1000000);
-                        String q = "insert into trip values (" + randomID +", (select (to_char"
-                            + "(sysdate, 'DD-MON-YYYY')) from dual), " + source 
-                                + ", " + destination + ", " + price +")";
+                        randomID = rnd.nextInt(1000000);
+                        String time = "select (to_char"
+                            + "(sysdate, 'DD-MON-YYYY')) from dual";
+                        Statement stmtTime = con.createStatement();
+                        ResultSet timeResult = stmtTime.executeQuery(time);
+                        currentTime = timeResult.getString(1);
+                        String q = "insert into trip values (" + randomID +", '" + currentTime +  "', '" + source 
+                                + "', '" + destination + "', " + price +")";
                         Statement stmtReservation = con.createStatement();
                         int resultReservation = stmtReservation.executeUpdate(q);
                         if (resultReservation > 1){
@@ -766,15 +845,56 @@ public class Manager {
                         else {
                             randomValid = false;
                         }
-                    } catch (SQLException | InputMismatchException e){
+                    } catch (SQLException e){
                         randomValid = false;
                     }
                 }
+                //obtain the date just inserted
+                String tripDate = "";
+                
                 //select the legs to add
-                
-                
+                System.out.println("Please select the leg IDs you wish to add to this flight. Type 0 to finish.");
+                boolean selectAnother = true;
+                viewLegs(0);
+                while (selectAnother){
+                    int legID = in.nextInt();
+                    in.nextLine();
+                    if(legID == 0){
+                        selectAnother = false;
+                        try {
+                            con.commit();
+                        } catch (SQLException ex) {
+                            System.out.println("Database Error, check internet connection.");
+                            System.exit(1);
+                        }
+                    }
+                    else{
+                        try {
+                            //add leg to leg_of_trip
+                            String insert = "insert into leg_of_trip values (" + randomID + ", '" + currentTime + ", " + legID + ")";
+                            Statement stmtLegOfTrip = con.createStatement();
+                            int resultLegOfTrip = stmtLegOfTrip.executeUpdate(insert);
+                            if(resultLegOfTrip > 0){
+                                System.out.println("Leg " + legID +"successfully added as part of trip" + randomID);
+                            }
+                            else {
+                                System.out.println("Leg not added to trip.");
+                            }
+                            selectAnother = true;
+                        } catch(SQLException e){
+                            System.out.println("Leg ID invalid. Please select another.");
+                            selectAnother = true;
+                        }
+                    }
+                }
             }
             
+        }
+        try {
+            con.setAutoCommit(true);
+        } catch (SQLException ex) {
+            System.out.println("Database Error, check internet connection.");
+            System.exit(1);
         }
         
     }
@@ -1011,7 +1131,26 @@ public class Manager {
                         break;
                     case 3:
                         System.out.println("Remove a leg option...\n");
-                        removeLeg();
+                        boolean legValid = false;
+                        System.out.println("Please enter the leg number of the "
+                                + "leg you wish you remove, or enter 0 to go back.");
+                        int legID = 0;
+                        while (!legValid){
+                            try{
+                                System.out.print("-->");
+                                legID = in.nextInt();
+                                legValid = true;
+                            } catch (InputMismatchException e){
+                                System.out.println("Please enter a valid number choice.");
+                                legValid = false;
+                            } catch (IllegalStateException ex) {
+                                in = new Scanner(System.in);
+                                System.out.println("Error: Internal Error, scanner closed, "
+                                        + "reinitialized. \nPlease try again.");
+                                legValid = false;
+                            }
+                        }
+                        removeLeg(legID);
                         done = false;
                         break;
                     case 4:
@@ -1052,6 +1191,153 @@ public class Manager {
         //input start airport
         //input end airport
         //insert into leg, leg_to, leg_from
+        boolean cont = true;
+        String source, destination;
+        Customer c = new Customer(con, in);
+        System.out.println("Please select the airport you wish to use as the starting point.");
+        source = c.pickAirportFromOptions();
+        System.out.println("Please select the airport you wish to use as the destination.");
+        destination = c.pickAirportFromOptions();
+        int price = 0;
+        System.out.println("Please enter the desired price of the leg.");
+        System.out.print("-->");
+        boolean inputValid = false;
+        while(!inputValid){
+            try{
+                price = in.nextInt();
+                in.nextLine();
+                inputValid = true;
+            } catch(InputMismatchException e){
+                System.out.println("Please enter a valid price.");
+                System.out.print("-->");
+                inputValid = false;
+            }
+        }
+        int planeID = 0, pilotID = 0;
+        boolean valid = false;
+        try { 
+            con.setAutoCommit(false);
+        } catch (SQLException e){
+            System.out.println("Database Error. Check your internet connection.");
+            System.exit(1);
+        }
+        while (!valid){
+            try {
+                String planeCheck = "select * from plane P where not exists "
+                        + "(select * from leg_id where plane_id = P.plane_id)";
+                Statement stmtPlaneCheck;
+                stmtPlaneCheck = con.createStatement();
+                ResultSet resultPlaneCheck = stmtPlaneCheck.executeQuery(planeCheck);
+                if (resultPlaneCheck.next()){
+                    String pilotCheck = "select * from pilot P where not exists "
+                        + "(select * from leg_id where pilot_id = P.pilot_id)";
+                    Statement stmtPilotCheck;
+                    stmtPilotCheck = con.createStatement();
+                    ResultSet resultPilotCheck = stmtPilotCheck.executeQuery(pilotCheck);
+                    if (resultPilotCheck.next()){
+                        valid = true;
+                    }
+                    else {
+                        valid = false;
+                    }
+                    stmtPilotCheck.close();
+                }
+                else {
+                    valid = false;
+                }
+                stmtPlaneCheck.close();
+            } catch (SQLException e){
+                System.out.println("Error selecting next available plane and pilot.");
+                valid = true;
+                cont = false;
+            }
+        }
+        if (cont){
+            boolean randomValid = false;
+            int randomID = 0;
+            while(!randomValid){
+                try{
+                    Random rnd = new Random();
+                    randomID = rnd.nextInt(1000000);
+                    String q = "insert into leg values (" + randomID + ", "
+                            + planeID + ", " + pilotID + ", " 
+                            + "to_char(sysdate, 'DD-MON-YYYY'), "
+                            + "to_char(sysdate, 'DD-MON-YYYY'), "
+                            + price + ")";
+                    Statement stmtLegInsert;
+                    stmtLegInsert = con.createStatement();
+                    int resultLegInsert = stmtLegInsert.executeUpdate(q);
+                    if (resultLegInsert > 0){
+                        randomValid = true;
+                    }
+                    else {
+                        randomValid = false;
+                    }
+                    stmtLegInsert.close();
+                } catch (SQLException e){
+                    
+                    randomValid = false;
+                }
+            }
+            try {
+                String to = "insert into leg_to values (" + randomID + ", " + destination + ")";
+                Statement stmtTo;
+                stmtTo = con.createStatement();
+                int resultTo = stmtTo.executeUpdate(to);
+                if (resultTo > 0){
+                    String from = "insert into leg_from values (" + randomID + ", " + destination + ")";
+                    Statement stmtFrom;
+                    stmtFrom = con.createStatement();
+                    int resultFrom = stmtFrom.executeUpdate(from);
+                    if (resultFrom > 0){
+                        System.out.println("Leg successfully added.");
+                        System.out.println("Database Error. Leg not added.");
+                        try {
+                            con.commit();
+                        } catch (SQLException ex) {
+                            System.out.println("Database Error. Please check your internet connection.");
+                            System.exit(1);
+                        }
+                    }
+                    else {
+                        System.out.println("Database Error. Leg not added.");
+                        try {
+                            con.rollback();
+                        } catch (SQLException ex) {
+                            System.out.println("Database Error. Please check your internet connection.");
+                            System.exit(1);
+                        }
+                    }
+                    stmtFrom.close();
+                }
+                else {
+                    System.out.println("Database Error. Leg not added.");
+                    try {
+                        con.rollback();
+                    } catch (SQLException ex) {
+                        System.out.println("Database Error. Please check your internet connection.");
+                        System.exit(1);
+                    }
+                }
+                stmtTo.close();
+            } catch (SQLException e){
+                System.out.println("Database Error. Leg not added.");
+                try {
+                    con.rollback();
+                } catch (SQLException ex) {
+                    System.out.println("Database Error. Please check your internet connection.");
+                    System.exit(1);
+                }
+            }
+            
+        }
+        try {
+            con.setAutoCommit(true);
+        } catch (SQLException ex) {
+            System.out.println("Database Error. Please check your internet connection.");
+            System.exit(1);
+        }
+        
     }
     
     private void viewLegs(int tripNumber){ 
@@ -1121,12 +1407,101 @@ public class Manager {
         System.out.println("");
     }
     
-    private void removeLeg(){
+    private void removeLeg(int legID){
         //select * from leg
         //input legID
         //if (result.next()) on (select * from leg)
             //delete from leg_of_trip where leg_id = legID
+            //delete from leg_to
+            //delete from leg_from
             //delete from leg where leg_id = legID
         //else redo input legID
+        if(legID > 0){
+            
+            //if leg exists
+                    
+            try {
+                con.setAutoCommit(false);
+                Statement stmtCheck;
+                stmtCheck = con.createStatement();
+                String q = "select * from leg where leg_id = " + legID + "";
+                ResultSet resultTest = stmtCheck.executeQuery(q);
+                if(resultTest.next()){
+                    String d = "delete from leg_of_trip where leg_id = " 
+                            + legID;
+                    Statement stmtLegOfTrip;
+                    stmtLegOfTrip = con.createStatement();
+                    int resultLegOfTrip = stmtLegOfTrip.executeUpdate(d);
+                    if (resultLegOfTrip > 0){
+                        String t = "delete from leg_to where leg_id = " 
+                            + legID;
+                        Statement stmtLegTo;
+                        stmtLegTo = con.createStatement();
+                        int resultLegTo = stmtLegTo.executeUpdate(t);
+                        if (resultLegTo == 1){
+                            Statement stmtLegFrom;
+                            stmtLegFrom = con.createStatement();
+                            String f = "delete from leg_from where leg_id = " + legID;
+                            int resultLegFrom = stmtLegFrom.executeUpdate(f);
+                            if (resultLegFrom == 1){
+                                String l = "delete from leg where leg_id = " + legID;
+                                Statement stmtLeg;
+                                stmtLeg = con.createStatement();
+                                int resultLeg = stmtLeg.executeUpdate(l);
+                                if (resultLeg == 1){
+                                    System.out.println("Leg " + legID + " successfully removed.");
+                                    con.commit();
+                                }
+                                else {
+                                    System.out.println("Error: Flight not deleted.");
+                                con.rollback();
+                                }
+                                stmtLeg.close();
+                            }
+                            
+                            else {
+                                System.out.println("Error: Flight not deleted.");
+                                con.rollback();
+                            }
+                            stmtLegFrom.close();
+                        }
+                        else {
+                            System.out.println("Error: Flight not deleted.");
+                            con.rollback();
+                        }
+                        stmtLegTo.close();
+                    }
+                    else{
+                        System.out.println("Error: Flight not deleted.");
+                        con.rollback();
+                    }
+                    stmtLegOfTrip.close();
+                }
+                else{
+                    System.out.println("Error: Flight not deleted.");
+                    con.rollback();
+                }
+                stmtCheck.close();
+            } catch (SQLException e){
+                System.out.println("Error: Database error. Going back to main menu");
+                try {
+                    con.rollback();
+                    con.setAutoCommit(true);
+                } catch (SQLException ex) {
+                    System.out.println("Error: Database connection error. Please check your internet connection.");
+                    System.exit(1);
+                }
+
+            }
+            try {
+                con.setAutoCommit(true);
+                    //delete from trip
+                    //delete from trip
+            } catch (SQLException ex) {
+                System.out.println("Error: Database connection error. Please check your internet connection.");
+                System.exit(1);
+            }
+        }
+        
     }
 }

@@ -997,7 +997,7 @@ public class Customer {
     } 
     
     /*display legs if I have time*/
-    private ArrayList<Integer> viewReservedFlights(int customerID){ 
+    public ArrayList<Integer> viewReservedFlights(int customerID){ 
         ArrayList<Integer> reservationIDs = new ArrayList<>();
         try{
             Statement reservationStmt = con.createStatement();
@@ -1044,7 +1044,7 @@ public class Customer {
         return reservationIDs;
     }
     
-    private void cancelReservedFlight(int customerID){
+    public void cancelReservedFlight(int customerID){
         System.out.println("Listing all of your reservations on file...");
         if (!hasReservations(customerID)){
             System.out.println("You have no reservations on file. Please add one"
