@@ -780,14 +780,14 @@ public class Manager {
             System.exit(1);
         }
         String promptAirportTo, promptAirportFrom;
-        promptAirportTo = "Please indicate the starting airport.";
-        promptAirportFrom = "Please indicate the destination airport.";
+        promptAirportTo = "Please indicate the destination airport.";
+        promptAirportFrom = "Please indicate the starting airport.";
         Customer c = new Customer(con,in);
         //find trips
         while (!done){
             //pick airports
             System.out.println(promptAirportTo);
-            
+            done = true;
             String destination = c.pickAirportFromOptions();
             if("".equals(destination)){
                 System.out.println("Airport not chosen. Please try again.");
@@ -826,20 +826,22 @@ public class Manager {
                 while(!randomValid){
                     try{
                         Random rnd = new Random();
-                        randomID = rnd.nextInt(1000000);
+                        randomID = rnd.nextInt(10000);
                         String time = "select (to_char"
                             + "(sysdate, 'DD-MON-YYYY')) from dual";
                         Statement stmtTime = con.createStatement();
                         ResultSet timeResult = stmtTime.executeQuery(time);
+                        timeResult.next();
                         currentTime = timeResult.getString(1);
                         String q = "insert into trip values (" + randomID +", '" + currentTime +  "', '" + source 
                                 + "', '" + destination + "', " + price +")";
-                        Statement stmtReservation = con.createStatement();
-                        int resultReservation = stmtReservation.executeUpdate(q);
-                        if (resultReservation > 1){
+                        Statement stmtFlight = con.createStatement();
+                        int resultFlight = stmtFlight.executeUpdate(q);
+                        if (resultFlight == 1){
                             randomValid = true;
                         }
                         else {
+                            con.rollback();
                             randomValid = false;
                         }
                     } catch (SQLException e){
@@ -847,12 +849,13 @@ public class Manager {
                     }
                 }
                 //obtain the date just inserted
-                String tripDate = "";
+                
                 
                 //select the legs to add
+                viewLegs(0);
                 System.out.println("Please select the leg IDs you wish to add to this flight. Type 0 to finish.");
                 boolean selectAnother = true;
-                viewLegs(0);
+                
                 while (selectAnother){
                     int legID = in.nextInt();
                     in.nextLine();
@@ -1221,17 +1224,19 @@ public class Manager {
         while (!valid){
             try {
                 String planeCheck = "select * from plane P where not exists "
-                        + "(select * from leg_id where plane_id = P.plane_id)";
+                        + "(select * from leg where plane_id = P.plane_id)";
                 Statement stmtPlaneCheck;
                 stmtPlaneCheck = con.createStatement();
                 ResultSet resultPlaneCheck = stmtPlaneCheck.executeQuery(planeCheck);
                 if (resultPlaneCheck.next()){
+                    planeID = resultPlaneCheck.getInt(1);
                     String pilotCheck = "select * from pilot P where not exists "
-                        + "(select * from leg_id where pilot_id = P.pilot_id)";
+                        + "(select * from leg where pilot_id = P.id)";
                     Statement stmtPilotCheck;
                     stmtPilotCheck = con.createStatement();
                     ResultSet resultPilotCheck = stmtPilotCheck.executeQuery(pilotCheck);
                     if (resultPilotCheck.next()){
+                        pilotID = resultPilotCheck.getInt(1);
                         valid = true;
                     }
                     else {
@@ -1277,18 +1282,17 @@ public class Manager {
                 }
             }
             try {
-                String to = "insert into leg_to values (" + randomID + ", " + destination + ")";
+                String to = "insert into leg_to values (" + randomID + ", '" + destination + "')";
                 Statement stmtTo;
                 stmtTo = con.createStatement();
                 int resultTo = stmtTo.executeUpdate(to);
                 if (resultTo > 0){
-                    String from = "insert into leg_from values (" + randomID + ", " + destination + ")";
+                    String from = "insert into leg_from values (" + randomID + ", '" + source + "')";
                     Statement stmtFrom;
                     stmtFrom = con.createStatement();
                     int resultFrom = stmtFrom.executeUpdate(from);
                     if (resultFrom > 0){
                         System.out.println("Leg successfully added.");
-                        System.out.println("Database Error. Leg not added.");
                         try {
                             con.commit();
                         } catch (SQLException ex) {
@@ -1427,61 +1431,22 @@ public class Manager {
                 String q = "select * from leg where leg_id = " + legID + "";
                 ResultSet resultTest = stmtCheck.executeQuery(q);
                 if(resultTest.next()){
-                    String d = "delete from leg_of_trip where leg_id = " 
+                    String d = "delete from leg where leg_id = " 
                             + legID;
-                    Statement stmtLegOfTrip;
-                    stmtLegOfTrip = con.createStatement();
-                    int resultLegOfTrip = stmtLegOfTrip.executeUpdate(d);
-                    if (resultLegOfTrip > 0){
-                        String t = "delete from leg_to where leg_id = " 
-                            + legID;
-                        Statement stmtLegTo;
-                        stmtLegTo = con.createStatement();
-                        int resultLegTo = stmtLegTo.executeUpdate(t);
-                        if (resultLegTo == 1){
-                            Statement stmtLegFrom;
-                            stmtLegFrom = con.createStatement();
-                            String f = "delete from leg_from where leg_id = " + legID;
-                            int resultLegFrom = stmtLegFrom.executeUpdate(f);
-                            if (resultLegFrom == 1){
-                                String l = "delete from leg where leg_id = " + legID;
-                                Statement stmtLeg;
-                                stmtLeg = con.createStatement();
-                                int resultLeg = stmtLeg.executeUpdate(l);
-                                if (resultLeg == 1){
-                                    System.out.println("Leg " + legID + " successfully removed.");
-                                    con.commit();
-                                }
-                                else {
-                                    System.out.println("Error: Flight not deleted.");
-                                con.rollback();
-                                }
-                                stmtLeg.close();
-                            }
-                            
-                            else {
-                                System.out.println("Error: Flight not deleted.");
-                                con.rollback();
-                            }
-                            stmtLegFrom.close();
-                        }
-                        else {
-                            System.out.println("Error: Flight not deleted.");
-                            con.rollback();
-                        }
-                        stmtLegTo.close();
+                    Statement stmtLegFinal;
+                    stmtLegFinal = con.createStatement();
+                    int resultLegFinal = stmtLegFinal.executeUpdate(d);
+                    if (resultLegFinal > 0){
+                        
+                        System.out.println("Leg " + legID + " successfully removed.");
+                        con.commit();
                     }
-                    else{
+                    else {
                         System.out.println("Error: Flight not deleted.");
-                        con.rollback();
-                    }
-                    stmtLegOfTrip.close();
-                }
-                else{
-                    System.out.println("Error: Flight not deleted.");
                     con.rollback();
+                    }
+                    stmtCheck.close();
                 }
-                stmtCheck.close();
             } catch (SQLException e){
                 System.out.println("Error: Database error. Going back to main menu");
                 try {
@@ -1502,6 +1467,5 @@ public class Manager {
                 System.exit(1);
             }
         }
-        
     }
 }
