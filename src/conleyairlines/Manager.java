@@ -633,7 +633,46 @@ public class Manager {
                         break;
                     case 3:
                         System.out.println("Remove a flight option...\n");
-                        removeFlight();
+                        boolean tripValid = false;
+                        System.out.println("Please enter the trip number you "
+                                + "would like to remove.");
+                        int tripNumber = 0;
+                        String tripDate = "";
+                        while (!tripValid){
+                            try{
+                                System.out.print("-->");
+                                tripNumber = in.nextInt();
+                                in.nextLine();
+                                tripValid = true;
+                            } catch (InputMismatchException e){
+                                System.out.println("Please enter a valid trip number, or 0 to go back.");
+                                in.nextLine();
+                                tripValid = false;
+                            }catch (IllegalStateException ex) {
+                                in = new Scanner(System.in);
+                                System.out.println("Error: Internal Error, scanner closed, "
+                                        + "reinitialized. \nPlease try again.");
+                                tripValid = false;
+                            }
+                        }
+                        boolean dateValid = false;
+                        System.out.println("Please specify the date of this trip (ex. 01-JAN-2013).");
+                        while (!dateValid){
+                            try{
+                                System.out.print("-->");
+                                tripDate = in.nextLine();
+                                dateValid = true;
+                            } catch (InputMismatchException e){
+                                System.out.println("Please enter a valid trip date, or 0 to go back.");
+                                dateValid = false;
+                            }catch (IllegalStateException ex) {
+                                in = new Scanner(System.in);
+                                System.out.println("Error: Internal Error, scanner closed, "
+                                        + "reinitialized. \nPlease try again.");
+                                dateValid = false;
+                            }
+                        }
+                        removeFlight(tripNumber, tripDate);
                         done = false;
                         break;
                     case 4:
@@ -857,10 +896,71 @@ public class Manager {
         }
     }
     
-    private void removeFlight(){
-        //if trip exists
-            //delete all legs from leg_of_trip
-            //delete from trip
+    private void removeFlight(int tripNumber, String tripDate){
+        if(tripNumber > 0){
+            if(!"0".equals(tripDate)){
+                //if trip exists
+                
+                try {
+                    con.setAutoCommit(false);
+                    Statement stmtCheck;
+                    stmtCheck = con.createStatement();
+                    String q = "select * from trip where trip_number = " + tripNumber + "";
+                    ResultSet resultTest = stmtCheck.executeQuery(q);
+                    if(resultTest.next()){
+                        String d = "delete from leg_of_trip where trip_number = " 
+                                + tripNumber + " and trip_date = '"+ tripDate + "'";
+                        Statement stmtLegs;
+                        stmtLegs = con.createStatement();
+                        int resultLegs = stmtLegs.executeUpdate(d);
+                        if (resultLegs > 0){
+                            String t = "delete from trip where trip_number = " 
+                                + tripNumber + " and trip_date = '"+ tripDate + "'";
+                            Statement stmtTrip;
+                            stmtTrip = con.createStatement();
+                            int resultTrip = stmtTrip.executeUpdate(t);
+                            if (resultTrip == 1){
+                                System.out.println("Flight" + tripNumber +" successfully removed.");
+                                con.commit();
+                            }
+                            else {
+                                System.out.println("Error: Flight not deleted.");
+                                con.rollback();
+                            }
+                            stmtTrip.close();
+                        }
+                        else{
+                            System.out.println("Error: Flight not deleted.");
+                            con.rollback();
+                        }
+                        stmtLegs.close();
+                    }
+                    else{
+                        System.out.println("Error: Flight not deleted.");
+                        con.rollback();
+                    }
+                    stmtCheck.close();
+                } catch (SQLException e){
+                    System.out.println("Error: Database error. Going back to main menu");
+                    try {
+                        con.rollback();
+                        con.setAutoCommit(true);
+                    } catch (SQLException ex) {
+                        System.out.println("Error: Database connection error. Please check your internet connection.");
+                        System.exit(1);
+                    }
+                    
+                }
+                try {
+                    con.setAutoCommit(true);
+                        //delete from trip
+                        //delete from trip
+                } catch (SQLException ex) {
+                    System.out.println("Error: Database connection error. Please check your internet connection.");
+                    System.exit(1);
+                }
+            }
+        }
     }
     
     //manage legs
