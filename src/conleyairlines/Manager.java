@@ -780,22 +780,22 @@ public class Manager {
             System.exit(1);
         }
         String promptAirportTo, promptAirportFrom;
-        promptAirportTo = "Please indicate the destination airport.";
         promptAirportFrom = "Please indicate the starting airport.";
+        promptAirportTo = "Please indicate the destination airport.";
         Customer c = new Customer(con,in);
         //find trips
         while (!done){
             //pick airports
-            System.out.println(promptAirportTo);
+            System.out.println(promptAirportFrom);
             done = true;
-            String destination = c.pickAirportFromOptions();
-            if("".equals(destination)){
+            String source = c.pickAirportFromOptions();
+            if("".equals(source)){
                 System.out.println("Airport not chosen. Please try again.");
                 done = false;
             }
 
-            System.out.println(promptAirportFrom);
-            String source = c.pickAirportFromOptions();
+            System.out.println(promptAirportTo);
+            String destination = c.pickAirportFromOptions();
             if("".equals(source)){
                 System.out.println("Airport not chosen. Please try again.");
                 done = false;
@@ -871,11 +871,11 @@ public class Manager {
                     else{
                         try {
                             //add leg to leg_of_trip
-                            String insert = "insert into leg_of_trip values (" + randomID + ", '" + currentTime + ", " + legID + ")";
+                            String insert = "insert into leg_of_trip values (" + randomID + ", '" + currentTime + "', " + legID + ")";
                             Statement stmtLegOfTrip = con.createStatement();
                             int resultLegOfTrip = stmtLegOfTrip.executeUpdate(insert);
                             if(resultLegOfTrip > 0){
-                                System.out.println("Leg " + legID +"successfully added as part of trip" + randomID);
+                                System.out.println("Leg #" + legID +" successfully added as part of trip #" + randomID);
                             }
                             else {
                                 System.out.println("Leg not added to trip.");
@@ -1025,15 +1025,10 @@ public class Manager {
                     con.setAutoCommit(false);
                     Statement stmtCheck;
                     stmtCheck = con.createStatement();
-                    String q = "select * from trip where trip_number = " + tripNumber + "";
+                    String q = "select * from trip where trip_number = " + tripNumber + " and trip_date = '" + tripDate + "'";
                     ResultSet resultTest = stmtCheck.executeQuery(q);
                     if(resultTest.next()){
-                        String d = "delete from leg_of_trip where trip_number = " 
-                                + tripNumber + " and trip_date = '"+ tripDate + "'";
-                        Statement stmtLegs;
-                        stmtLegs = con.createStatement();
-                        int resultLegs = stmtLegs.executeUpdate(d);
-                        if (resultLegs > 0){
+
                             String t = "delete from trip where trip_number = " 
                                 + tripNumber + " and trip_date = '"+ tripDate + "'";
                             Statement stmtTrip;
@@ -1048,17 +1043,12 @@ public class Manager {
                                 con.rollback();
                             }
                             stmtTrip.close();
-                        }
-                        else{
-                            System.out.println("Error: Flight not deleted.");
-                            con.rollback();
-                        }
-                        stmtLegs.close();
                     }
                     else{
                         System.out.println("Error: Flight not deleted.");
                         con.rollback();
                     }
+                    
                     stmtCheck.close();
                 } catch (SQLException e){
                     System.out.println("Error: Database error. Going back to main menu");
@@ -1342,7 +1332,6 @@ public class Manager {
     }
     
     private void viewLegs(int tripNumber){ 
-        in.nextLine();
         String q;
         if (tripNumber == 0){
             q = "select l.leg_id as LegID, plane_id as PlaneID, pilot_id as PilotID, "
