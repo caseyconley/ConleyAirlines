@@ -1,7 +1,6 @@
-
 # Casey Conley
 
-> cdc214
+> cdc214@lehigh.edu
 
 > CSE 241
 
@@ -31,7 +30,7 @@ README, I have given a customer ID to use if you want, but it is completely opti
 My aim was to simulate some very commonly performed actions that customers of airlines would like to know. This includes management of billing
 information, such as adding a credit card, deleting a credit card, or viewing all of your credit cards. 
 
-The customer can also make a reservation, view their reservations, or 
+The customer can also make a reservation, view their reservations, or cancel a reservation.
 
 ### Manager.java
 
