@@ -1,0 +1,26 @@
+import java.util.*;
+import java.lang.StringBuilder;
+
+class PlaneSeatsDataGeneration {
+  public static void main(String[] args){
+    int num;
+    Scanner in = new Scanner(System.in);
+    System.out.println("How many plane seats to generate?: ");
+    num = in.nextInt();
+    int plane_id;
+    String seat_class;
+    System.out.println("Plane ID?: ");
+    plane_id = in.nextInt();
+    System.out.println("Seat class?: ");
+    seat_class = in.next();
+    StringBuilder str;
+    for (int i=1; i<=num; i++){
+      rnd = new Random();
+      id_num = 100000 + rnd.nextInt(900000);
+      str = new StringBuilder("INSERT INTO PLANE_SEATS (PLANE_ID,SEAT_CLASS,SEAT_NUM) VALUES (");
+      str.append(plane_id + ", '" + seat_class + "', " + i + ");");
+      
+      System.out.println(str.toString());
+    }
+  }
+}

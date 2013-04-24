@@ -1,0 +1,9 @@
+/* Casey Conley
+ * cdc214
+ * CSE 241
+ * Project Checkpoint 4
+ */
+
+As of now, I have an updated version of my ER design, as well as my prveous versions saved on my hard drive. I used multiple methods for generating data, including the data generation website on Course Site and my own short Java programs that generate plane data and plane seat data. I saved all my insert files for each table as well. 
+
+I designed my tables in a way that would allow me to create my user interfaces easily and be able to grab data in a logical way. I have yet to implement my interfaces, however I intend to do so soon. I will probably just create simple command line interfaces in Java. 

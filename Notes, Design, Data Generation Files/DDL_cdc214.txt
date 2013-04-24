@@ -1,0 +1,155 @@
+drop table PERSON;
+drop table PILOT;
+drop table CUSTOMER;
+drop table PLANE;
+drop table PILOT_CERTIFICATION;
+drop table CREDIT_CARD;
+drop table BILLING_INFO;
+drop table AIRPORT;
+drop table FLIGHT;
+drop table LEG;
+drop table PILOTING_LEG;
+drop table RESERVATION;
+drop table CUSTOMER_RESERVED;
+drop table CREDIT_CARD_RESERVED;
+drop table LEG_TO;
+drop table LEG_FROM;
+drop table LEG_OF_FLIGHT;
+drop table SEAT;
+
+create table PERSON
+  (ID numeric(10),
+  FIRST_NAME varchar(30) not null,
+  LAST_NAME varchar(30) not null,
+  primary key(ID));
+
+create table PILOT
+	(ID numeric(10),
+	FIRST_NAME varchar(30) not null,
+	LAST_NAME varchar(30) not null,
+	primary key(ID)) inherits (PERSON);
+	
+create table CUSTOMER under PERSON
+	(ID numeric(10),
+	FIRST_NAME varchar(30) not null,
+	LAST_NAME varchar(30) not null,
+	primary key(ID)) inherits (PERSON);
+
+create table PLANE
+	(PLANE_ID varchar(6),
+	BRAND varchar(30) not null,
+	MODEL numeric(3) not null,
+	NUM_SEATS numeric(3),
+	DATE_PUT_IN_SERVICE date,
+	MILES_FLOWN numeric(8),
+	primary key(PLANE_ID));
+	
+create table PILOT_CERTIFICATION
+	(PILOT_ID numeric(10),
+	BRAND varchar(30),
+	MODEL numeric(3),
+	primary key(PILOT_ID, BRAND, MODEL),
+	foreign key(PILOT_ID) references PILOT(ID) on delete cascade,
+	foreign key(BRAND, MODEL) references PLANE on delete cascade);
+	
+create table CREDIT_CARD
+	(CARD_NUM numeric(16),
+	SECURITY_CODE numeric(3) not null,
+	EXPIRATION_DATE numeric(4) not null,
+	STREET_ADDRESS varchar(30) not null,
+	CITY varchar(20) not null,
+	STATE varchar(2) not null,
+	ZIP numeric(5) not null,
+	primary key(CARD_NUM));
+	
+create table BILLING_INFO
+	(CARD_NUM numeric(16),
+	CUSTOMER_ID numeric(10),
+	primary key(CUSTOMER_ID, CARD_NUM),
+	foreign key(CARD_NUM) references CREDIT_CARD on delete cascade,
+	foreign key(CUSTOMER_ID) references CUSTOMER(ID) on delete cascade);
+	
+create table AIRPORT
+	(CALLSIGN varchar(3) unique,
+	CITY varchar(20) not null,
+	primary key(CALLSIGN));
+
+create table FLIGHT
+	(FLIGHT_NUMBER numeric(4),
+	DATE date,
+	START varchar(3),
+	END varchar(3) check START <> END,
+	primary key (FLIGHT_NUMBER, DATE),
+	foreign key (START) references AIRPORT(CALLSIGN) on delete cascade,
+	foreign key (END) references AIRPORT(CALLSIGN) on delete cascade);
+	
+create table LEG
+	(LEG_ID numeric(6),
+	TIME_ARRIVAL time,
+	TIME_DEPARTURE time,
+	primary key(LEG_ID));
+	
+create table PILOTING_LEG
+	(PILOT_ID numeric(10)
+	LEG_ID numeric(6),
+	primary key(PILOT_ID, LEG_ID),
+	foreign key(LEG_ID) references LEG on delete cascade,
+	foreign key(PILOT_ID) references PILOT(ID) on delete set null);	
+	
+create table RESERVATION
+	(RESERVATION_ID numeric(10),
+	FLIGHT_NUMBER numeric(4),
+	CLASS varchar(8) check CLASS in ('first', 'economy', 'business'),
+	primary key(FLIGHT_NUMBER, CLASS),
+	foreign key(FLIGHT_NUMBER) references FLIGHT on delete cascade);
+	
+create table CUSTOMER_RESERVED
+	(CUSTOMER_ID numeric(10),
+	RESERVATION_ID numeric(10),
+	foreign key(RESERVATION_ID) references RESERVATION,
+	foreign key(CUSTOMER_ID) references CUSTOMER(ID),
+	primary key(CUSTOMER_ID, RESERVATION_ID));
+	
+create table CREDIT_CARD_RESERVED
+	(CARD_NUM numeric(16),
+	RESERVATION_ID numeric(10),
+	foreign key(RESERVATION_ID) references RESERVATION,
+	foreign key(CARD_NUM) references CREDIT_CARD,
+	primary key(CARD_NUM, RESERVATION_ID));
+	
+create table LEG_TO
+	(LEG_ID numeric(6),
+	AIRPORT varchar(3),
+	foreign key (AIRPORT) references AIRPORT(CALLSIGN) on delete cascade,
+	foreign key (LEG_ID) references LEG on delete cascade,
+	primary key (LEG_ID, AIRPORT));
+	
+create table LEG_FROM
+	(LEG_ID numeric(6),
+	AIRPORT varchar(3),
+	foreign key (AIRPORT) references AIRPORT(CALLSIGN) on delete cascade,
+	foreign key (LEG_ID) references LEG on delete cascade,
+	primary key (LEG_ID, AIRPORT));
+	
+create table LEG_OF_FLIGHT
+	(FLIGHT_NUMBER numeric(4),
+	DATE date,
+	LEG_ID numeric(6),
+	foreign key (FLIGHT_NUMBER, DATE) references FLIGHT,
+	foreign key (LEG_ID) references LEG_ID,
+	primary key (FLIGHT_NUMBER, DATE, LEG_ID));
+	
+create table SEAT
+	(SEAT_NUMBER numeric(3),
+	LEG_ID numeric(6),
+	CUSTOMER_ID numeric(10),
+	CLASS varchar(8),
+	foreign key (LEG_ID) references LEG,
+	foreign key (CUSTOMER_ID) references CUSTOMER(ID),
+	foreign key (CLASS) references RESERVATION(CLASS),
+	primary key (SEAT_NUMBER, LEG_ID));
+	
+	
+
+
+	
