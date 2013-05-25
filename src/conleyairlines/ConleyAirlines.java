@@ -9,8 +9,10 @@ import java.util.*;
  * Email: cdc214@lehigh.edu
  * Course: CSE 241
  * Title: Airline Semester Project
- * Purpose: A user interface for a fictional airline company. Uses JDBC with a
- *          database housing the information for the airline.
+ * Total Length of Project: 2916 lines
+ * Length: 123 lines
+ * Purpose: A user interface for a fictional airline company. Uses JDBC with an
+ *          Oracle database housing the information for the airline.
  * 
  */
 public class ConleyAirlines {

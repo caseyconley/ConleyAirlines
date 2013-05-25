@@ -9,9 +9,10 @@ import java.util.*;
  * Email: cdc214@lehigh.edu
  * Course: CSE 241
  * Title: Airline Semester Project
+ * Length: 150 lines
  * Purpose: The user interface for the database administrator of a fictional 
- *          airline company. Uses JDBC with a database housing the information 
- *          for the airline.
+ *          airline company. Uses JDBC with an Oracle database housing the 
+ *          information for the airline.
  * 
  */
 public class DatabaseAdmin {
