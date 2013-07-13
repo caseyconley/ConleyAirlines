@@ -1,4 +1,3 @@
-
 package conleyairlines;
 
 import java.sql.*;
@@ -30,9 +29,9 @@ public class ConleyAirlines {
             System.exit(1);
         }
         try {
+            String sCon = "OMMITTED";
             con = DriverManager.getConnection
-                ("jdbc:oracle:thin:@edgar2.cse.lehigh.edu:1521:cse241","cdc214",
-                 "P884028629");
+                (sCon);
         } catch (SQLException ex) {
             System.out.println("Error: Internal error, Could not connect to "
                     + "Edgar2. Check internet connection and try again.");
