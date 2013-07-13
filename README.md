@@ -6,6 +6,8 @@
 
 > Semester Project - "Conley Airlines"
 
+Note!*** This program will not run because the database I used does not exist anymore. One could theoretically create a database and enter all the tables and create randomly generated data to run it, but that's more trouble than it's worth.
+
 ## Description
 
 ### ConleyAirlines.java
